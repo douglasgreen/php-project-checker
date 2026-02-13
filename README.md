@@ -100,6 +100,14 @@ Exit codes: `0` for success, `1` if MUST violations exist.
 sort-composer-json.php
 ```
 
+## Package sorter
+
+**Usage:**
+
+```bash
+sort-package-json.php
+```
+
 ## Package checker
 
 **Usage:**
