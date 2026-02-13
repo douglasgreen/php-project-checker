@@ -100,4 +100,73 @@ Exit codes: `0` for success, `1` if MUST violations exist.
 sort-composer-json.php
 ```
 
+## Package checker
 
+**Usage:**
+
+```bash
+# Check current directory
+./package-checker.php
+
+# Check specific directory
+./package-checker.php -d /path/to/project
+
+# With configuration file
+./package-checker.php -d /path/to/project -c /path/to/package-checker-config.json
+```
+
+**Example configuration file** (`package-checker-config.json`):
+
+```json
+{
+    "owner": "douglasgreen",
+    "isPublic": true,
+    "expectedLicense": "MIT",
+    "minimumPackageVersions": {
+        "husky": ">=9.0.0",
+        "prettier": ">=3.0.0",
+        "eslint": ">=9.0.0",
+        "stylelint": ">=16.0.0",
+        "jest": ">=29.0.0",
+        "typescript": ">=5.0.0"
+    },
+    "requireKeywords": true,
+    "forbiddenKeywords": ["tool", "utility", "helper", "misc"]
+}
+```
+
+**Features validated:**
+
+- **Package Name & Owner**: Validates scoped (`@owner/package`) or unscoped names, checks against configured owner, suggests scoped format for Composer consistency
+- **License**: Ensures presence, matches expected value, cross-validates with composer.json, SPDX validation
+- **Engines**: Requires Node.js >= 20 and npm >= 10 with regex validation of version constraints
+- **Package Versions**: Enforces minimum versions for Husky >= 9, Prettier >= 3, ESLint >= 9, Stylelint >= 16, Jest >= 29, TypeScript >= 5 via configuration
+- **Dependency Consistency**: Checks for dev tools in production dependencies, wildcard versions, version mismatches across dependencies/devDependencies/peerDependencies
+- **Prettier Configuration**: Validates `.prettierrc.json` exists (preferred over `.prettierrc`), checks installed plugins are listed in config
+- **Stylelint Configuration**: Validates config file exists and plugins are properly listed
+- **ESLint Configuration**: Enforces flat config format (`eslint.config.js`), flags all legacy `.eslintrc.*` formats, validates plugins are imported in config
+- **File Location Standards**: Enforces directory structure:
+  - `bin/` for shell scripts
+  - `assets/styles/` for CSS/SCSS
+  - `assets/data/` for JSON/YAML data
+  - `assets/images/` for images
+  - `assets/scripts/` for JS/TS
+  - `config/` for configuration
+  - `assets/sql/` for SQL
+  - `assets/xml/` for XML
+- **Deprecated Config Files**: Flags `.eslintrc.js`, `.prettierrc.yaml`, `.mocharc.cjs`, `phpcs.xml`, `tslint.json` with migration instructions
+- **Project File Analysis**: Detects JS/TS files and flags if ESLint missing, CSS files and flags if Stylelint missing, flags non-config `.dist` files
+- **Security/Best Practices**: Checks for lockfile (package-lock.json/yarn.lock/pnpm-lock.yaml), validates no dev tools in production dependencies, ensures standard scripts (lint, test, format) present when tools installed
+- **Cross-file Validation**: Compares name (project part only), description, and license with composer.json for consistency
+
+Exit codes: `0` for success, `1` if MUST violations exist.
+
+## Manual checking
+
+After all automated checks are complete, manually run:
+- `composer-unused.phar`
+- `composer bump`
+- `composer update`
+- `composer outdated`
+- `npm update`
+- `npm outdated`
