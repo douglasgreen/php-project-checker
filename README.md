@@ -161,6 +161,14 @@ sort-composer-json.php
 
 Exit codes: `0` for success, `1` if MUST violations exist.
 
+## Function checker
+
+Make sure that functions are used by running:
+
+```bash
+function-checker.php
+```
+
 ## Manual checking
 
 After all automated checks are complete, manually run:
