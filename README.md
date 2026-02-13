@@ -169,6 +169,52 @@ Make sure that functions are used by running:
 function-checker.php
 ```
 
+## GitLab CI checker
+
+**Usage:**
+
+```bash
+# Check current directory
+gitlab-ci-checker.php
+
+# Check specific directory
+gitlab-ci-checker.php -d /path/to/project
+
+# With configuration file
+gitlab-ci-checker.php -d /path/to/project -c /path/to/ci-checker-config.json
+```
+
+**Example configuration file** (`ci-checker-config.json`):
+
+```json
+{
+    "minimumPhpVersion": "8.3",
+    "requireUntrackedCache": true,
+    "requireStrictMode": true,
+    "requirePinnedImages": true,
+    "requireInterruptible": true,
+    "maxLineLength": 120,
+    "requiredWorkflowRules": true
+}
+```
+
+**Features validated:**
+
+- **File Structure**: `.gitlab-ci.yml` at root, include organization under `.gitlab/ci/`, no circular dependencies
+- **YAML Syntax**: 2-space indentation, line length limits, block scalar usage for scripts
+- **Stages**: Explicit declaration, fail-fast ordering (build → test → security → deploy → verify), all jobs assigned to stages
+- **Job Design**: Kebab-case naming (e.g., `lint:yaml`, `test:unit`), required tags, timeout values, interruptible settings
+- **Script Standards**: `set -euo pipefail` strict mode required, extracts scripts >50 lines to `bin/` directory, error handling with `echo >&2`
+- **Deprecated Flags**: Removes `--no-suggest` from composer commands per user requirements
+- **Caching**: Requires `cache: untracked: true`, lockfile-based keys (e.g., `composer.lock`, `package-lock.json`) to prevent poisoning, pull policies for read-only jobs
+- **Artifacts**: `expire_in` required (never flagged), no secrets in paths, test report integration (JUnit/coverage)
+- **Images**: Pinned versions (no `latest`), PHP version consistency with `composer.json` per user requirements, version reference validation
+- **Security**: No hardcoded secrets, no variable echoing, restricted privileged mode, protected environments with resource groups for production
+- **Control Flow**: `rules:` only (no `only/except`), specific-to-general ordering, MR triggers for tests, branch protection for production
+- **Environments**: Name and URL required for deployments, deployment tier marking
+
+Exit codes: `0` for success, `1` if MUST violations exist, warnings printed for SHOULD violations.
+
 ## Manual checking
 
 After all automated checks are complete, manually run:
