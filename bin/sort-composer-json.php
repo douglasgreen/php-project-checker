@@ -43,7 +43,7 @@ $keyOrders = [
 ];
 
 // Load the composer.json file
-$composerJsonPath = 'composer.json';
+$composerJsonPath = $argv[1] ?? 'composer.json';
 if (!file_exists($composerJsonPath)) {
     echo "composer.json file not found.\n";
     exit(1);
