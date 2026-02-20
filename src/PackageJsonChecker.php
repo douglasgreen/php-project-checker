@@ -782,6 +782,27 @@ class PackageJsonChecker
         }
     }
 
+    private function validateToolingConfigs(): void
+    {
+        // Check for Prettier, ESLint, Stylelint configs (already done in specific methods)
+        // This method serves as a coordinator
+
+        // Check if tools are installed but configs missing
+        $devDeps = $this->package['devDependencies'] ?? [];
+
+        if (isset($devDeps['prettier'])) {
+            $this->validatePrettierConfig();
+        }
+
+        if (isset($devDeps['eslint'])) {
+            $this->validateEslintConfig();
+        }
+
+        if (isset($devDeps['stylelint'])) {
+            $this->validateStylelintConfig();
+        }
+    }
+
     private function validateFileLocations(): void
     {
         foreach ($this->fileInventory as $file) {
@@ -838,24 +859,6 @@ class PackageJsonChecker
                     }
                 }
             }
-        }
-    }
-
-    private function validateToolingConfigs(): void
-    {
-        // Prettier configuration
-        if (isset($this->package['devDependencies']['prettier'])) {
-            $this->validatePrettierConfig();
-        }
-
-        // ESLint configuration
-        if (isset($this->package['devDependencies']['eslint'])) {
-            $this->validateEslintConfig();
-        }
-
-        // Stylelint configuration
-        if (isset($this->package['devDependencies']['stylelint'])) {
-            $this->validateStylelintConfig();
         }
     }
 
@@ -1051,27 +1054,6 @@ class PackageJsonChecker
         }
     }
 
-
-    private function validateToolingConfigs(): void
-    {
-        // Check for Prettier, ESLint, Stylelint configs (already done in specific methods)
-        // This method serves as a coordinator
-
-        // Check if tools are installed but configs missing
-        $devDeps = $this->package['devDependencies'] ?? [];
-
-        if (isset($devDeps['prettier'])) {
-            $this->validatePrettierConfig();
-        }
-
-        if (isset($devDeps['eslint'])) {
-            $this->validateEslintConfig();
-        }
-
-        if (isset($devDeps['stylelint'])) {
-            $this->validateStylelintConfig();
-        }
-    }
 
     private function validateCrossFileConsistency(): void
     {
