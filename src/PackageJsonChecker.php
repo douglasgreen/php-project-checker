@@ -11,6 +11,9 @@ declare(strict_types=1);
 
 namespace DouglasGreen\PHPProjectChecker;
 
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+
 class PackageJsonChecker
 {
     // RFC 2119 levels
@@ -22,20 +25,41 @@ class PackageJsonChecker
 
     private readonly string $rootDir;
 
+    /**
+     * @var array<string, mixed>
+     */
     private array $config;
 
+    /**
+     * @var array<string, mixed>
+     */
     private array $package;
 
+    /**
+     * @var array<string, mixed>|null
+     */
     private ?array $composer = null;
 
+    /**
+     * @var array<int, array<string, string>>
+     */
     private array $issues = [];
 
+    /**
+     * @var array<int, string>
+     */
     private array $fileInventory = [];
 
+    /**
+     * @var array<int, string>
+     */
     private array $allowedTypes = [
         'module', 'commonjs', 'module-commonjs', 'esm', 'cjs',
     ];
 
+    /**
+     * @var array<string, string>
+     */
     private array $deprecatedConfigs = [
         '.eslintrc.js' => 'Migrate to eslint.config.js (flat config)',
         '.eslintrc.cjs' => 'Migrate to eslint.config.js (flat config)',
@@ -51,6 +75,9 @@ class PackageJsonChecker
         'tslint.json' => 'TSLint is deprecated; migrate to ESLint with @typescript-eslint',
     ];
 
+    /**
+     * @var array<string, array<int, string>>
+     */
     private array $fileTypeLocations = [
         'bin/' => ['*.sh', '*.bash', '*.zsh'],
         'assets/styles/' => ['*.css', '*.scss', '*.sass', '*.less', '*.styl'],
@@ -64,7 +91,8 @@ class PackageJsonChecker
 
     public function __construct(string $directory, string $configFile = '')
     {
-        $this->rootDir = realpath($directory) ?: getcwd();
+        $realPath = realpath($directory);
+        $this->rootDir = $realPath !== false ? $realPath : (string) getcwd();
         $this->loadPackageJson();
         $this->loadComposerJson();
         $this->scanFileInventory();
@@ -113,6 +141,10 @@ class PackageJsonChecker
         }
 
         $content = file_get_contents($path);
+        if ($content === false) {
+            fwrite(STDERR, "\033[31mError: Could not read package.json\033[0m\n");
+            exit(1);
+        }
         $this->package = json_decode($content, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
@@ -128,8 +160,11 @@ class PackageJsonChecker
         $path = $this->rootDir . '/composer.json';
         if (file_exists($path)) {
             $content = file_get_contents($path);
+            if ($content === false) {
+                return;
+            }
             $this->composer = json_decode($content, true);
-            if (json_last_error() === JSON_ERROR_NONE) {
+            if (json_last_error() === JSON_ERROR_NONE && is_array($this->composer)) {
                 echo "Loaded composer.json for cross-validation\n";
             }
         }
@@ -166,8 +201,9 @@ class PackageJsonChecker
         ];
 
         if ($configFile && file_exists($configFile)) {
-            $userConfig = json_decode(file_get_contents($configFile), true);
-            if ($userConfig === null) {
+            $content = file_get_contents($configFile);
+            $userConfig = $content !== false ? json_decode($content, true) : null;
+            if (!is_array($userConfig)) {
                 fwrite(STDERR, "\033[33mWarning: Invalid config JSON, using defaults\033[0m\n");
                 $this->config = $defaults;
             } else {
@@ -447,7 +483,6 @@ class PackageJsonChecker
     private function validateFiles(): void
     {
         $files = $this->package['files'] ?? [];
-        $this->package['include'] ?? [];
 
         // Check for common mistakes
         if (!empty($files) && in_array('src', $files) && !in_array('dist', $files)) {
@@ -612,20 +647,21 @@ class PackageJsonChecker
         if ($prettierField !== null && isset($prettierField['plugins'])) {
             $plugins = $prettierField['plugins'];
         } elseif ($configFile !== null && str_ends_with($configFile, '.json')) {
-            $content = json_decode(file_get_contents($this->rootDir . '/' . $configFile), true);
-            $plugins = $content['plugins'] ?? [];
+            $jsonContent = file_get_contents($this->rootDir . '/' . $configFile);
+            $content = $jsonContent !== false ? json_decode($jsonContent, true) : null;
+            $plugins = is_array($content) ? ($content['plugins'] ?? []) : [];
         }
 
         // Check installed plugins match config
         $devDeps = $this->package['devDependencies'] ?? [];
         foreach ($devDeps as $pkg => $version) {
             if (str_starts_with((string) $pkg, 'prettier-plugin-')) {
-                $pluginName = str_replace('prettier-plugin-', '', $pkg);
+                $pluginName = str_replace('prettier-plugin-', '', (string) $pkg);
                 if (!in_array($pkg, $plugins) && !in_array($pluginName, $plugins)) {
                     $this->addIssue(
                         self::SHOULD,
                         'Unconfigured Prettier plugin',
-                        $pkg,
+                        (string) $pkg,
                         sprintf("Plugin '%s' installed but not listed in Prettier config plugins array", $pkg),
                     );
                 }
@@ -696,12 +732,12 @@ class PackageJsonChecker
 
                 foreach ($devDeps as $pkg) {
                     if (str_starts_with((string) $pkg, 'eslint-plugin-') || $pkg === '@eslint/js') {
-                        $shortName = str_replace('eslint-plugin-', '', $pkg);
+                        $shortName = str_replace('eslint-plugin-', '', (string) $pkg);
                         if (!str_contains($content, $shortName) && !str_contains($content, (string) $pkg)) {
                             $this->addIssue(
                                 self::SHOULD,
                                 'Unconfigured ESLint plugin',
-                                $pkg,
+                                (string) $pkg,
                                 sprintf("Plugin '%s' installed but may not be imported in eslint.config.js", $pkg),
                             );
                         }
@@ -741,8 +777,9 @@ class PackageJsonChecker
         // Check plugins are configured
         $config = $pkgConfig ?? [];
         if ($hasConfig && str_ends_with($configFile, '.json')) {
-            $content = json_decode(file_get_contents($this->rootDir . '/' . $configFile), true);
-            $config = $content ?? [];
+            $jsonContent = file_get_contents($this->rootDir . '/' . $configFile);
+            $content = $jsonContent !== false ? json_decode($jsonContent, true) : null;
+            $config = is_array($content) ? $content : [];
         }
 
         $plugins = $config['plugins'] ?? [];
@@ -857,7 +894,7 @@ class PackageJsonChecker
                 $this->addIssue(
                     self::MUST,
                     'Wildcard dependency',
-                    sprintf('%s: %s', $pkg, $version),
+                    (string) $pkg . ': ' . (string) $version,
                     "Avoid '*' or 'latest'; use explicit version constraints",
                 );
             }
