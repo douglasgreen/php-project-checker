@@ -1,6 +1,6 @@
 {
-    "name": "",
-    "description": "",
+    "name": "douglasgreen/php-project-checker",
+    "description": "A collection of PHP scripts to check project code for defects",
     "type": "project",
     "license": "MIT",
     "require": {
