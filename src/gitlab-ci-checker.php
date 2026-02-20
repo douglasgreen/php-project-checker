@@ -7,9 +7,9 @@
  * GitLab CI/CD engineering standards and security best practices.
  */
 
-namespace DouglasGreen\PHPProjectChecker;
-
 declare(strict_types=1);
+
+namespace DouglasGreen\PHPProjectChecker;
 
 class GitLabCiChecker
 {
@@ -821,7 +821,7 @@ class GitLabCiChecker
             echo str_repeat("-", 60) . "\n";
             foreach ($mustIssues as $issue) {
                 echo sprintf("\033[31m[%s]\033[0m %s\n", $issue['category'], $issue['context']);
-                echo "  → {$issue['message']}\n\n");
+                echo "  → {$issue['message']}\n\n";
             }
         }
 
@@ -831,7 +831,7 @@ class GitLabCiChecker
             echo str_repeat("-", 60) . "\n";
             foreach ($shouldIssues as $issue) {
                 echo sprintf("\033[33m[%s]\033[0m %s\n", $issue['category'], $issue['context']);
-                echo "  → {$issue['message']}\n\n");
+                echo "  → {$issue['message']}\n\n";
             }
         }
 
@@ -841,7 +841,7 @@ class GitLabCiChecker
             echo str_repeat("-", 60) . "\n";
             foreach ($mayIssues as $issue) {
                 echo sprintf("\033[36m[%s]\033[0m %s\n", $issue['category'], $issue['context']);
-                echo "  → {$issue['message']}\n\n");
+                echo "  → {$issue['message']}\n\n";
             }
         }
 

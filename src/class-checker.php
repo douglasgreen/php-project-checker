@@ -1,15 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace DouglasGreen\PHPProjectChecker;
 
 class ClassAnalyzer
 {
     private array $definitions = []; // ['FQCN' => ['file' => ..., 'line' => ..., 'type' => ...]]
+
     private array $usages = []; // ['FQCN' => count]
-    private ?string $gitRoot;
+
+    private readonly ?string $gitRoot;
 
     // Context for the current file being parsed
     private string $currentNamespace = '';
+
     private array $useMap = []; // [Alias => FQCN]
 
     public function __construct($gitRoot = null)
@@ -28,7 +33,7 @@ class ClassAnalyzer
         echo 'Found ' . count($files) . " PHP files\n\n";
 
         foreach ($files as $file) {
-            echo "Parsing: {$file}\n";
+            echo sprintf('Parsing: %s%s', $file, PHP_EOL);
             $this->parseFile($file);
         }
 
@@ -39,20 +44,24 @@ class ClassAnalyzer
         $this->printReport();
     }
 
-    private function findGitRoot()
+    private function findGitRoot(): string|false|null
     {
         $dir = getcwd();
         while ($dir !== '/') {
             if (is_dir($dir . '/.git')) {
                 return $dir;
             }
+
             $dir = dirname($dir);
         }
 
         return null;
     }
 
-    private function getPhpFiles()
+    /**
+     * @return mixed[]
+     */
+    private function getPhpFiles(): array
     {
         $files = [];
         $command = 'git -C ' . escapeshellarg((string) $this->gitRoot) . " ls-files '*.php' 2>&1";
@@ -78,7 +87,7 @@ class ClassAnalyzer
         return $files;
     }
 
-    private function scanDirectory($dir, array &$files): void
+    private function scanDirectory(?string $dir, array &$files): void
     {
         $iterator = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
@@ -124,8 +133,10 @@ class ClassAnalyzer
                     if ($braceLevel === $classBraceLevel) {
                         $classBraceLevel = -1; // Exited class
                     }
+
                     $braceLevel--;
                 }
+
                 continue;
             }
 
@@ -163,7 +174,7 @@ class ClassAnalyzer
                     ];
 
                     // Parse extends/implements for usage tracking
-                    $this->parseInheritance($tokens, $i, $tokenCount, $token[0]);
+                    $this->parseInheritance($tokens, $i, $tokenCount);
 
                     // Find the opening brace to track scope for 'use' inside classes
                     // We look for '{' after the definition
@@ -172,6 +183,7 @@ class ClassAnalyzer
                             $classBraceLevel = $braceLevel + 1; // The level this class body will exist at
                             break;
                         }
+
                         // If we hit ';' before '{', it's an abstract class or interface without body?
                         // No, interfaces have braces. Abstract classes have braces.
                         // But traits might be composed?
@@ -181,6 +193,7 @@ class ClassAnalyzer
                         }
                     }
                 }
+
                 continue;
             }
 
@@ -205,11 +218,9 @@ class ClassAnalyzer
             // We look for T_STRING followed by T_DOUBLE_COLON
             if ($token[0] === T_STRING) {
                 $next = $this->getNextNonWhitespaceToken($tokens, $i, $tokenCount);
-                if ($next && is_array($next) && $next[0] === T_DOUBLE_COLON) {
-                    // Check it's not self, static, parent
-                    if (!in_array($token[1], ['self', 'static', 'parent'])) {
-                        $this->incrementUsage($this->resolveName($token[1]));
-                    }
+                // Check it's not self, static, parent
+                if ($next && is_array($next) && $next[0] === T_DOUBLE_COLON && !in_array($token[1], ['self', 'static', 'parent'])) {
+                    $this->incrementUsage($this->resolveName($token[1]));
                 }
             }
         }
@@ -223,14 +234,17 @@ class ClassAnalyzer
                 if ($tokens[$j] === ';' || $tokens[$j] === '{') {
                     break;
                 }
+
                 continue;
             }
+
             if ($tokens[$j][0] === T_STRING || $tokens[$j][0] === T_NS_SEPARATOR) {
                 $namespace .= $tokens[$j][1];
             } elseif ($tokens[$j][0] === T_WHITESPACE) {
                 continue;
             }
         }
+
         return $namespace;
     }
 
@@ -248,7 +262,10 @@ class ClassAnalyzer
             $t = $tokens[$j];
 
             if (!is_array($t)) {
-                if ($t === ';') break;
+                if ($t === ';') {
+                    break;
+                }
+
                 if ($t === '{') {
                     // Start of group use. We treat the prefix as part of the name for now.
                     // This simple parser might not fully support group use correctly,
@@ -257,10 +274,12 @@ class ClassAnalyzer
                     $name = ''; // Reset name to capture inside
                     continue;
                 }
+
                 if ($t === '}') {
                     $inGroup = false;
                     break;
                 }
+
                 if ($t === ',') {
                     // End of one item in group
                     $finalAlias = $alias ?: basename(str_replace('\\', '/', $name));
@@ -269,6 +288,7 @@ class ClassAnalyzer
                     $alias = '';
                     continue;
                 }
+
                 continue;
             }
 
@@ -282,20 +302,23 @@ class ClassAnalyzer
         }
 
         // Register the last found name
-        if ($name) {
+        if ($name !== '' && $name !== '0') {
             $finalAlias = $alias ?: basename(str_replace('\\', '/', $name));
             $this->useMap[$finalAlias] = $name;
         }
     }
 
-    private function parseInheritance(array $tokens, int &$i, int $tokenCount, int $typeToken): void
+    private function parseInheritance(array $tokens, int &$i, int $tokenCount): void
     {
         // class Foo extends Bar implements Baz
         // Look for T_EXTENDS and T_IMPLEMENTS
 
         for ($j = $i + 1; $j < $tokenCount; ++$j) {
             if (!is_array($tokens[$j])) {
-                if ($tokens[$j] === '{') break; // Start of body, stop looking
+                if ($tokens[$j] === '{') {
+                    break;
+                }
+                 // Start of body, stop looking
                 continue;
             }
 
@@ -310,10 +333,17 @@ class ClassAnalyzer
                 // Can be a list
                 for ($k = $j + 1; $k < $tokenCount; ++$k) {
                     if (!is_array($tokens[$k])) {
-                        if ($tokens[$k] === '{') break 2;
-                        if ($tokens[$k] === ',') continue;
+                        if ($tokens[$k] === '{') {
+                            break 2;
+                        }
+
+                        if ($tokens[$k] === ',') {
+                            continue;
+                        }
+
                         continue;
                     }
+
                     if ($tokens[$k][0] === T_STRING) {
                         $this->incrementUsage($this->resolveName($tokens[$k][1]));
                     }
@@ -327,23 +357,36 @@ class ClassAnalyzer
         // use Trait1, Trait2;
         for ($j = $i + 1; $j < $tokenCount; ++$j) {
             if (!is_array($tokens[$j])) {
-                if ($tokens[$j] === ';') break;
-                if ($tokens[$j] === ',') continue;
+                if ($tokens[$j] === ';') {
+                    break;
+                }
+
+                if ($tokens[$j] === ',') {
+                    continue;
+                }
+
                 // Skip complex trait adaptations rules for now (instead of insteadof/as)
                 if ($tokens[$j] === '{') {
                     // Skip block inside trait use
                     $braceCount = 1;
                     for ($k = $j + 1; $k < $tokenCount; ++$k) {
                         if (!is_array($tokens[$k])) {
-                            if ($tokens[$k] === '{') $braceCount++;
+                            if ($tokens[$k] === '{') {
+                                $braceCount++;
+                            }
+
                             if ($tokens[$k] === '}') {
                                 $braceCount--;
-                                if ($braceCount === 0) break;
+                                if ($braceCount === 0) {
+                                    break;
+                                }
                             }
                         }
                     }
+
                     break;
                 }
+
                 continue;
             }
 
@@ -358,8 +401,13 @@ class ClassAnalyzer
         // new ClassName()
         // new class () - anonymous
         for ($j = $i + 1; $j < $tokenCount; ++$j) {
-            if (!is_array($tokens[$j])) continue;
-            if ($tokens[$j][0] === T_WHITESPACE) continue;
+            if (!is_array($tokens[$j])) {
+                continue;
+            }
+
+            if ($tokens[$j][0] === T_WHITESPACE) {
+                continue;
+            }
 
             if ($tokens[$j][0] === T_CLASS) {
                 // Anonymous class, check extends/implements?
@@ -378,8 +426,13 @@ class ClassAnalyzer
     {
         // instanceof ClassName
         for ($j = $i + 1; $j < $tokenCount; ++$j) {
-            if (!is_array($tokens[$j])) continue;
-            if ($tokens[$j][0] === T_WHITESPACE) continue;
+            if (!is_array($tokens[$j])) {
+                continue;
+            }
+
+            if ($tokens[$j][0] === T_WHITESPACE) {
+                continue;
+            }
 
             if ($tokens[$j][0] === T_STRING) {
                 $this->incrementUsage($this->resolveName($tokens[$j][1]));
@@ -391,33 +444,48 @@ class ClassAnalyzer
     private function extractNameAfterKeyword(array $tokens, int &$i, int $tokenCount): ?string
     {
         for ($j = $i + 1; $j < $tokenCount; ++$j) {
-            if (!is_array($tokens[$j])) continue;
-            if ($tokens[$j][0] === T_WHITESPACE) continue;
+            if (!is_array($tokens[$j])) {
+                continue;
+            }
+
+            if ($tokens[$j][0] === T_WHITESPACE) {
+                continue;
+            }
+
             if ($tokens[$j][0] === T_STRING) {
                 return $tokens[$j][1];
             }
+
             // If we hit another keyword or operator, stop
             break;
         }
+
         return null;
     }
 
     private function extractNextName(array $tokens, int &$i, int $tokenCount): ?string
     {
         for ($j = $i + 1; $j < $tokenCount; ++$j) {
-            if (!is_array($tokens[$j])) continue;
-            if ($tokens[$j][0] === T_WHITESPACE) continue;
+            if (!is_array($tokens[$j])) {
+                continue;
+            }
+
+            if ($tokens[$j][0] === T_WHITESPACE) {
+                continue;
+            }
+
             if ($tokens[$j][0] === T_STRING) {
                 return $tokens[$j][1];
             }
         }
+
         return null;
     }
 
     private function resolveName(string $name): string
     {
         // If fully qualified
-        if (strpos($name, '\\') === 0) {
+        if (str_starts_with($name, '\\')) {
             return ltrim($name, '\\');
         }
 
@@ -428,7 +496,7 @@ class ClassAnalyzer
 
         // Check if it's a built-in type (ignore for usage tracking or treat as root)
         // For this report, we just namespace it if we are in a namespace
-        if ($this->currentNamespace) {
+        if ($this->currentNamespace !== '' && $this->currentNamespace !== '0') {
             // Check if it's already FQCN relative to namespace or imported
             // If not imported, assume it's in the current namespace
             return $this->currentNamespace . '\\' . $name;
@@ -442,24 +510,33 @@ class ClassAnalyzer
         if (!isset($this->usages[$fqcn])) {
             $this->usages[$fqcn] = 0;
         }
+
         $this->usages[$fqcn]++;
     }
 
     private function getPreviousNonWhitespaceToken(array $tokens, int $index): ?array
     {
         for ($i = $index - 1; $i >= 0; $i--) {
-            if (is_array($tokens[$i]) && $tokens[$i][0] === T_WHITESPACE) continue;
+            if (is_array($tokens[$i]) && $tokens[$i][0] === T_WHITESPACE) {
+                continue;
+            }
+
             return is_array($tokens[$i]) ? $tokens[$i] : [$tokens[$i]]; // Normalize simple chars
         }
+
         return null;
     }
 
     private function getNextNonWhitespaceToken(array $tokens, int $index, int $tokenCount): ?array
     {
         for ($i = $index + 1; $i < $tokenCount; $i++) {
-            if (is_array($tokens[$i]) && $tokens[$i][0] === T_WHITESPACE) continue;
+            if (is_array($tokens[$i]) && $tokens[$i][0] === T_WHITESPACE) {
+                continue;
+            }
+
             return is_array($tokens[$i]) ? $tokens[$i] : [$tokens[$i]];
         }
+
         return null;
     }
 
@@ -498,7 +575,7 @@ class ClassAnalyzer
         // Print unused
         echo 'UNUSED CLASSES/TRAIT/INTERFACES (' . count($unused) . "):\n";
         echo str_repeat('-', 80) . "\n";
-        if (empty($unused)) {
+        if ($unused === []) {
             echo "None found! All defined structures are being used.\n";
         } else {
             foreach ($unused as $item) {
@@ -507,7 +584,7 @@ class ClassAnalyzer
                     $item['name'],
                     $item['info']['type'],
                     $item['info']['file'],
-                    $item['info']['line']
+                    $item['info']['line'],
                 );
             }
         }
@@ -518,13 +595,13 @@ class ClassAnalyzer
         echo str_repeat('-', 80) . "\n";
 
         // Sort by usage count
-        usort($used, fn($a, $b) => $b['count'] - $a['count']);
+        usort($used, fn (array $a, array $b): int|float => $b['count'] - $a['count']);
 
         foreach ($used as $item) {
             echo sprintf(
                 "%-50s Used: %4d times\n",
                 $item['name'],
-                $item['count']
+                $item['count'],
             );
         }
 

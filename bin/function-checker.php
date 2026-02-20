@@ -8,7 +8,7 @@ try {
     $gitRoot = $argv[1] ?? null;
     $analyzer = new FunctionAnalyzer($gitRoot);
     $analyzer->analyze();
-} catch (Exception $e) {
-    echo 'Error: ' . $e->getMessage() . "\n";
+} catch (Exception $exception) {
+    echo 'Error: ' . $exception->getMessage() . "\n";
     exit(1);
 }

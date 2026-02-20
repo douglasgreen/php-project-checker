@@ -1,11 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace DouglasGreen\PHPProjectChecker;
 
 class FunctionAnalyzer
 {
     private array $definitions = []; // ['functionName' => ['file' => ..., 'line' => ..., 'type' => ...]]
+
     private array $calls = []; // ['functionName' => count]
+
     private $gitRoot;
 
     public function __construct($gitRoot = null)
@@ -24,7 +28,7 @@ class FunctionAnalyzer
         echo 'Found ' . count($files) . " PHP files\n\n";
 
         foreach ($files as $file) {
-            echo "Parsing: {$file}\n";
+            echo sprintf('Parsing: %s%s', $file, PHP_EOL);
             $this->parseFile($file);
         }
 
@@ -35,19 +39,23 @@ class FunctionAnalyzer
         $this->printReport();
     }
 
-    private function findGitRoot()
+    private function findGitRoot(): string|false|null
     {
         $dir = getcwd();
         while ($dir !== '/') {
             if (is_dir($dir . '/.git')) {
                 return $dir;
             }
+
             $dir = dirname($dir);
         }
-
+        return null;
     }
 
-    private function getPhpFiles()
+    /**
+     * @return mixed[]
+     */
+    private function getPhpFiles(): array
     {
         $files = [];
         $command = 'git -C ' . escapeshellarg((string) $this->gitRoot) . " ls-files '*.php' 2>&1";
@@ -121,9 +129,9 @@ class FunctionAnalyzer
             if ($token[0] === T_FUNCTION) {
                 $funcName = $this->extractFunctionName($tokens, $i);
                 if ($funcName) {
-                    $fullName = $currentClass ? "{$currentClass}::{$funcName}" : $funcName;
+                    $fullName = $currentClass ? sprintf('%s::%s', $currentClass, $funcName) : $funcName;
                     if ($currentNamespace && !$currentClass) {
-                        $fullName = "{$currentNamespace}\\{$funcName}";
+                        $fullName = sprintf('%s\%s', $currentNamespace, $funcName);
                     }
 
                     $this->definitions[$fullName] = [
@@ -160,13 +168,16 @@ class FunctionAnalyzer
     private function extractNamespace(array $tokens, int|float &$i): string
     {
         $namespace = '';
-        for ($j = $i + 1; $j < count($tokens); ++$j) {
+        $counter = count($tokens);
+        for ($j = $i + 1; $j < $counter; ++$j) {
             if (!is_array($tokens[$j])) {
                 if ($tokens[$j] === ';' || $tokens[$j] === '{') {
                     break;
                 }
+
                 continue;
             }
+
             if ($tokens[$j][0] === T_STRING || $tokens[$j][0] === T_NS_SEPARATOR) {
                 $namespace .= $tokens[$j][1];
             } elseif ($tokens[$j][0] === T_WHITESPACE) {
@@ -177,36 +188,38 @@ class FunctionAnalyzer
         return $namespace;
     }
 
-    private function extractClassName(array $tokens, &$i, $namespace)
+    private function extractClassName(array $tokens, float|int &$i, string $namespace)
     {
-        for ($j = $i + 1; $j < count($tokens); ++$j) {
+        $counter = count($tokens);
+        for ($j = $i + 1; $j < $counter; ++$j) {
             if (is_array($tokens[$j]) && $tokens[$j][0] === T_STRING) {
                 $className = $tokens[$j][1];
 
-                return $namespace ? "{$namespace}\\{$className}" : $className;
+                return $namespace !== '' && $namespace !== '0' ? sprintf('%s\%s', $namespace, $className) : $className;
             }
         }
-
     }
 
     private function extractFunctionName(array $tokens, &$i)
     {
-        for ($j = $i + 1; $j < count($tokens); ++$j) {
+        $counter = count($tokens);
+        for ($j = $i + 1; $j < $counter; ++$j) {
             $token = $tokens[$j];
             if (is_array($token)) {
                 if ($token[0] === T_STRING) {
                     return $token[1];
                 }
+
                 if ($token[0] === T_WHITESPACE) {
                     continue;
                 }
             }
+
             // If we hit ( before finding a name, it's an anonymous function
             if ($token === '(') {
                 return;
             }
         }
-
     }
 
     private function extractFunctionCalls(array $tokens, &$i, int $tokenCount): void
@@ -218,12 +231,14 @@ class FunctionAnalyzer
             if (is_array($tokens[$j]) && $tokens[$j][0] === T_WHITESPACE) {
                 continue;
             }
+
             if ($tokens[$j] === '(') {
                 // This is a function call
                 $this->incrementCall($funcName);
 
                 return;
             }
+
             break;
         }
     }
@@ -235,6 +250,7 @@ class FunctionAnalyzer
             if (is_array($tokens[$j]) && $tokens[$j][0] === T_WHITESPACE) {
                 continue;
             }
+
             if (is_array($tokens[$j]) && $tokens[$j][0] === T_STRING) {
                 $methodName = $tokens[$j][1];
 
@@ -243,16 +259,19 @@ class FunctionAnalyzer
                     if (is_array($tokens[$k]) && $tokens[$k][0] === T_WHITESPACE) {
                         continue;
                     }
+
                     if ($tokens[$k] === '(') {
                         // This is a method call
                         $this->incrementCall($methodName);
-                        $this->incrementCall("*::{$methodName}"); // Wildcard for any class
+                        $this->incrementCall('*::' . $methodName); // Wildcard for any class
 
                         return;
                     }
+
                     break;
                 }
             }
+
             break;
         }
     }
@@ -262,6 +281,7 @@ class FunctionAnalyzer
         if (!isset($this->calls[$name])) {
             $this->calls[$name] = 0;
         }
+
         ++$this->calls[$name];
     }
 
@@ -283,8 +303,8 @@ class FunctionAnalyzer
                 $parts = explode('::', (string) $funcName);
                 if (count($parts) === 2) {
                     $methodOnly = $parts[1];
-                    if (isset($this->calls["*::{$methodOnly}"])) {
-                        $callCount += $this->calls["*::{$methodOnly}"];
+                    if (isset($this->calls['*::' . $methodOnly])) {
+                        $callCount += $this->calls['*::' . $methodOnly];
                     }
                 }
             }
@@ -311,7 +331,7 @@ class FunctionAnalyzer
         // Print unused functions
         echo 'UNUSED FUNCTIONS (' . count($unused) . "):\n";
         echo str_repeat('-', 80) . "\n";
-        if (empty($unused)) {
+        if ($unused === []) {
             echo "None found! All functions are being used.\n";
         } else {
             foreach ($unused as $item) {
@@ -331,7 +351,7 @@ class FunctionAnalyzer
         echo str_repeat('-', 80) . "\n";
 
         // Sort by call count (descending)
-        usort($used, fn(array $a, array $b) => $b['calls'] - $a['calls']);
+        usort($used, fn (array $a, array $b): float|int => $b['calls'] - $a['calls']);
 
         foreach ($used as $item) {
             $special = $item['special'] ? ' [SPECIAL/MAGIC METHOD]' : '';
@@ -351,7 +371,7 @@ class FunctionAnalyzer
         echo str_repeat('=', 80) . "\n";
     }
 
-    private function isSpecialMethod($funcName): bool
+    private function isSpecialMethod(int|string $funcName): bool
     {
         // Check for magic methods and constructors
         $specialMethods = [
@@ -362,7 +382,7 @@ class FunctionAnalyzer
         ];
 
         foreach ($specialMethods as $method) {
-            if (str_contains((string) $funcName, "::{$method}")) {
+            if (str_contains((string) $funcName, '::' . $method)) {
                 return true;
             }
         }

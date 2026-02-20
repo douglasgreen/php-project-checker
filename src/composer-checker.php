@@ -6,26 +6,34 @@
  * Validates composer.json against project standards and Composer best practices.
  */
 
+declare(strict_types=1);
+
 namespace DouglasGreen\PHPProjectChecker;
 
-declare(strict_types=1);
+use JsonSchema\Validator;
 
 class ComposerChecker
 {
-    private string $rootDir;
-    private array $config;
-    private array $composer;
-    private array $issues = [];
-    private ?array $lockData = null;
-
     // RFC 2119 levels
-    const MUST = 'MUST';
-    const SHOULD = 'SHOULD';
-    const MAY = 'MAY';
+    public const MUST = 'MUST';
+
+    public const SHOULD = 'SHOULD';
+
+    public const MAY = 'MAY';
+
+    private readonly string $rootDir;
+
+    private array $config;
+
+    private array $composer;
+
+    private array $issues = [];
+
+    private ?array $lockData = null;
 
     private array $allowedTypes = [
         'library', 'project', 'composer-plugin', 'metapackage',
-        'symfony-bundle', 'wordpress-plugin', 'wordpress-theme'
+        'symfony-bundle', 'wordpress-plugin', 'wordpress-theme',
     ];
 
     private array $securityPatterns = [
@@ -50,6 +58,48 @@ class ComposerChecker
         $this->loadComposerJson();
         $this->loadComposerLock();
         $this->loadConfig($configFile);
+    }
+
+    public function run(): void
+    {
+        echo str_repeat('=', 60) . "\n";
+        echo "Running Composer Standards Checks\n";
+        echo str_repeat('=', 60) . "\n\n";
+
+        $this->validateBasicStructure();
+        $this->validatePackageName();
+        $this->validateType();
+        $this->validateDescription();
+        $this->validateLicense();
+        $this->validateKeywords();
+        $this->validateVersion();
+        $this->validatePhpVersion();
+        $this->validateAutoload();
+        $this->validateConfig();
+        $this->validateRequireAndDev();
+        $this->validateConflictReplaceProvide();
+        $this->validateSuggest();
+        $this->validateStability();
+        $this->validateRepositories();
+        $this->validateScripts();
+        $this->validateBin();
+        $this->validateExtra();
+        $this->validateSupport();
+        $this->validateFunding();
+        $this->validateAbandoned();
+        $this->validateArchive();
+
+        if ($this->config['isPublic']) {
+            $this->validatePublicFields();
+        }
+
+        if (!empty($this->config['minimumPackageVersions'])) {
+            $this->validateMinimumVersions();
+        }
+
+        $this->runComposerValidate();
+
+        $this->printReport();
     }
 
     private function loadComposerJson(): void
@@ -93,7 +143,7 @@ class ComposerChecker
             'minimumPackageVersions' => [],
             'phpMinimumVersion' => '>=8.3',
             'requireKeywords' => true,
-            'checkSchema' => false // Requires external JSON schema validator
+            'checkSchema' => false, // Requires external JSON schema validator
         ];
 
         if ($configFile && file_exists($configFile)) {
@@ -103,56 +153,14 @@ class ComposerChecker
                 $this->config = $defaults;
             } else {
                 $this->config = array_merge($defaults, $userConfig);
-                echo "Loaded configuration from {$configFile}\n";
+                echo sprintf('Loaded configuration from %s%s', $configFile, PHP_EOL);
             }
         } else {
             $this->config = $defaults;
-            if ($configFile) {
+            if ($configFile !== '' && $configFile !== '0') {
                 echo "Config file not found, using defaults\n";
             }
         }
-    }
-
-    public function run(): void
-    {
-        echo str_repeat("=", 60) . "\n";
-        echo "Running Composer Standards Checks\n";
-        echo str_repeat("=", 60) . "\n\n";
-
-        $this->validateBasicStructure();
-        $this->validatePackageName();
-        $this->validateType();
-        $this->validateDescription();
-        $this->validateLicense();
-        $this->validateKeywords();
-        $this->validateVersion();
-        $this->validatePhpVersion();
-        $this->validateAutoload();
-        $this->validateConfig();
-        $this->validateRequireAndDev();
-        $this->validateConflictReplaceProvide();
-        $this->validateSuggest();
-        $this->validateStability();
-        $this->validateRepositories();
-        $this->validateScripts();
-        $this->validateBin();
-        $this->validateExtra();
-        $this->validateSupport();
-        $this->validateFunding();
-        $this->validateAbandoned();
-        $this->validateArchive();
-
-        if ($this->config['isPublic']) {
-            $this->validatePublicFields();
-        }
-
-        if (!empty($this->config['minimumPackageVersions'])) {
-            $this->validateMinimumVersions();
-        }
-
-        $this->runComposerValidate();
-
-        $this->printReport();
     }
 
     private function validateBasicStructure(): void
@@ -160,8 +168,12 @@ class ComposerChecker
         $required = ['name', 'description', 'type'];
         foreach ($required as $field) {
             if (empty($this->composer[$field])) {
-                $this->addIssue(self::MUST, "Missing required field", "composer.json",
-                    "Field '{$field}' is required");
+                $this->addIssue(
+                    self::MUST,
+                    'Missing required field',
+                    'composer.json',
+                    sprintf("Field '%s' is required", $field),
+                );
             }
         }
     }
@@ -172,16 +184,24 @@ class ComposerChecker
 
         // Pattern: owner/package with lowercase, numbers, hyphens, underscores
         if (!preg_match('/^[a-z0-9_-]+\/[a-z0-9_-]+$/', $name)) {
-            $this->addIssue(self::MUST, "Invalid package name format", "name: {$name}",
-                "Must match pattern: ^[a-z0-9_\\-]+\\/[a-z0-9_\\-]+$ (lowercase, hyphenated)");
+            $this->addIssue(
+                self::MUST,
+                'Invalid package name format',
+                'name: ' . $name,
+                'Must match pattern: ^[a-z0-9_\\-]+\\/[a-z0-9_\\-]+$ (lowercase, hyphenated)',
+            );
         }
 
         // Owner validation
         if (!empty($this->config['owner'])) {
             $parts = explode('/', $name);
             if ($parts[0] !== $this->config['owner']) {
-                $this->addIssue(self::MUST, "Owner mismatch", "name: {$name}",
-                    "Owner '{$parts[0]}' does not match expected '{$this->config['owner']}'");
+                $this->addIssue(
+                    self::MUST,
+                    'Owner mismatch',
+                    'name: ' . $name,
+                    sprintf("Owner '%s' does not match expected '%s'", $parts[0], $this->config['owner']),
+                );
             }
         }
     }
@@ -191,8 +211,12 @@ class ComposerChecker
         $type = $this->composer['type'] ?? 'library';
 
         if (!in_array($type, $this->allowedTypes, true)) {
-            $this->addIssue(self::MUST, "Invalid package type", "type: {$type}",
-                "Must be one of: " . implode(', ', $this->allowedTypes));
+            $this->addIssue(
+                self::MUST,
+                'Invalid package type',
+                'type: ' . $type,
+                'Must be one of: ' . implode(', ', $this->allowedTypes),
+            );
         }
     }
 
@@ -200,12 +224,20 @@ class ComposerChecker
     {
         $desc = $this->composer['description'] ?? '';
 
-        if (empty($desc) || trim($desc) === '') {
-            $this->addIssue(self::MUST, "Missing description", "description",
-                "Description field must be present and not empty");
-        } elseif (strlen($desc) < 20) {
-            $this->addIssue(self::SHOULD, "Description too short", "description",
-                "Description should be meaningful (currently " . strlen($desc) . " chars)");
+        if (empty($desc) || trim((string) $desc) === '') {
+            $this->addIssue(
+                self::MUST,
+                'Missing description',
+                'description',
+                'Description field must be present and not empty',
+            );
+        } elseif (strlen((string) $desc) < 20) {
+            $this->addIssue(
+                self::SHOULD,
+                'Description too short',
+                'description',
+                'Description should be meaningful (currently ' . strlen((string) $desc) . ' chars)',
+            );
         }
     }
 
@@ -214,8 +246,12 @@ class ComposerChecker
         $license = $this->composer['license'] ?? null;
 
         if (empty($license)) {
-            $this->addIssue(self::MUST, "Missing license", "license",
-                "License field is required (e.g., MIT, GPL-3.0, proprietary)");
+            $this->addIssue(
+                self::MUST,
+                'Missing license',
+                'license',
+                'License field is required (e.g., MIT, GPL-3.0, proprietary)',
+            );
             return;
         }
 
@@ -225,8 +261,12 @@ class ComposerChecker
             $expected = $this->config['expectedLicense'];
             if ((is_array($license) && !in_array($expected, $license)) ||
                 (!is_array($license) && $license !== $expected)) {
-                $this->addIssue(self::MUST, "License mismatch", "license: {$licenseStr}",
-                    "Expected license '{$expected}'");
+                $this->addIssue(
+                    self::MUST,
+                    'License mismatch',
+                    'license: ' . $licenseStr,
+                    sprintf("Expected license '%s'", $expected),
+                );
             }
         }
     }
@@ -236,8 +276,12 @@ class ComposerChecker
         $keywords = $this->composer['keywords'] ?? null;
 
         if ($this->config['requireKeywords'] && (empty($keywords) || !is_array($keywords))) {
-            $this->addIssue(self::MUST, "Missing keywords", "keywords",
-                "Keywords array is required");
+            $this->addIssue(
+                self::MUST,
+                'Missing keywords',
+                'keywords',
+                'Keywords array is required',
+            );
             return;
         }
 
@@ -246,15 +290,23 @@ class ComposerChecker
             $unique = array_unique($keywords);
             if (count($unique) !== count($keywords)) {
                 $dups = array_diff_key($keywords, $unique);
-                $this->addIssue(self::SHOULD, "Duplicate keywords", "keywords",
-                    "Duplicate entries found: " . implode(', ', array_intersect_key($keywords, $dups)));
+                $this->addIssue(
+                    self::SHOULD,
+                    'Duplicate keywords',
+                    'keywords',
+                    'Duplicate entries found: ' . implode(', ', array_intersect_key($keywords, $dups)),
+                );
             }
 
             // Check all are strings
             foreach ($keywords as $kw) {
                 if (!is_string($kw) || empty(trim($kw))) {
-                    $this->addIssue(self::MUST, "Invalid keyword", "keywords",
-                        "Keywords must be non-empty strings");
+                    $this->addIssue(
+                        self::MUST,
+                        'Invalid keyword',
+                        'keywords',
+                        'Keywords must be non-empty strings',
+                    );
                     break;
                 }
             }
@@ -268,12 +320,20 @@ class ComposerChecker
 
             // Check format if present (should follow semver)
             if (!preg_match('/^\d+\.\d+\.\d+(-.+)?$/', $version)) {
-                $this->addIssue(self::SHOULD, "Non-semver version", "version: {$version}",
-                    "Version should follow semantic versioning (1.0.0) or be omitted (managed by git tags)");
+                $this->addIssue(
+                    self::SHOULD,
+                    'Non-semver version',
+                    'version: ' . $version,
+                    'Version should follow semantic versioning (1.0.0) or be omitted (managed by git tags)',
+                );
             }
 
-            $this->addIssue(self::SHOULD, "Version field present", "version",
-                "Version field should typically be omitted for libraries (managed via git tags)");
+            $this->addIssue(
+                self::SHOULD,
+                'Version field present',
+                'version',
+                'Version field should typically be omitted for libraries (managed via git tags)',
+            );
         }
     }
 
@@ -282,16 +342,24 @@ class ComposerChecker
         $phpConstraint = $this->composer['require']['php'] ?? '';
 
         if (empty($phpConstraint)) {
-            $this->addIssue(self::MUST, "Missing PHP version", "require.php",
-                "PHP version constraint is required");
+            $this->addIssue(
+                self::MUST,
+                'Missing PHP version',
+                'require.php',
+                'PHP version constraint is required',
+            );
             return;
         }
 
         // Check for 8.3+
         $minPhp = $this->config['phpMinimumVersion'];
-        if (!preg_match('/>=8\.[3-9]|>=9|~\d+\.\d+|^\d+\.\d+/', $phpConstraint)) {
-            $this->addIssue(self::MUST, "PHP version too low", "require.php: {$phpConstraint}",
-                "Requires {$minPhp} or higher");
+        if (!preg_match('/>=8\.[3-9]|>=9|~\d+\.\d+|^\d+\.\d+/', (string) $phpConstraint)) {
+            $this->addIssue(
+                self::MUST,
+                'PHP version too low',
+                'require.php: ' . $phpConstraint,
+                sprintf('Requires %s or higher', $minPhp),
+            );
         }
     }
 
@@ -301,48 +369,68 @@ class ComposerChecker
         $psr4 = $autoload['psr-4'] ?? [];
 
         if (empty($psr4)) {
-            $this->addIssue(self::MUST, "Missing PSR-4 autoload", "autoload.psr-4",
-                "Must use PSR-4 autoloading (not PSR-0 or classmap only)");
+            $this->addIssue(
+                self::MUST,
+                'Missing PSR-4 autoload',
+                'autoload.psr-4',
+                'Must use PSR-4 autoloading (not PSR-0 or classmap only)',
+            );
             return;
         }
 
         $projectName = explode('/', $this->composer['name'] ?? '/')[1] ?? '';
         $owner = $this->config['owner'] ?: explode('/', $this->composer['name'] ?? '/')[0];
-
+        $this->toStudlyCase($projectName);
         // Convert owner to StudlyCase for namespace
-        $expectedNamespace = $this->toStudlyCase($owner) . '\\\\' . $this->toStudlyCase($projectName);
+        $this->toStudlyCase($owner);
 
         $foundValid = false;
         foreach ($psr4 as $namespace => $path) {
             // Check if namespace matches owner
             if (!empty($this->config['owner'])) {
                 $expectedOwnerNs = $this->toStudlyCase($owner);
-                if (strpos($namespace, $expectedOwnerNs) !== 0) {
-                    $this->addIssue(self::MUST, "Namespace owner mismatch", "autoload.psr-4: {$namespace}",
-                        "Top-level namespace should match owner '{$expectedOwnerNs}'");
+                if (!str_starts_with((string) $namespace, $expectedOwnerNs)) {
+                    $this->addIssue(
+                        self::MUST,
+                        'Namespace owner mismatch',
+                        'autoload.psr-4: ' . $namespace,
+                        sprintf("Top-level namespace should match owner '%s'", $expectedOwnerNs),
+                    );
                 }
             }
 
             // Check if qualified with project name (not just owner)
-            $parts = explode('\\\\', trim($namespace, '\\\\'));
+            $parts = explode('\\\\', trim((string) $namespace, '\\\\'));
             if (count($parts) < 2) {
-                $this->addIssue(self::MUST, "Unqualified namespace", "autoload.psr-4: {$namespace}",
-                    "Namespace must be qualified with project name, not just '{$parts[0]}\\\\'");
+                $this->addIssue(
+                    self::MUST,
+                    'Unqualified namespace',
+                    'autoload.psr-4: ' . $namespace,
+                    sprintf("Namespace must be qualified with project name, not just '%s\\\\'", $parts[0]),
+                );
             }
 
             // Check source path exists
-            $fullPath = $this->rootDir . '/' . trim($path, '/');
+            $fullPath = $this->rootDir . '/' . trim((string) $path, '/');
             if (!is_dir($fullPath)) {
-                $this->addIssue(self::MUST, "Missing autoload path", "path: {$path}",
-                    "Autoload path '{$fullPath}' does not exist");
+                $this->addIssue(
+                    self::MUST,
+                    'Missing autoload path',
+                    'path: ' . $path,
+                    sprintf("Autoload path '%s' does not exist", $fullPath),
+                );
             } else {
                 $foundValid = true;
             }
         }
 
         if (!$foundValid) {
-            $this->addIssue(self::MUST, "Invalid autoload configuration", "autoload",
-                "No valid PSR-4 autoload paths found");
+            $this->addIssue(
+                self::MUST,
+                'Invalid autoload configuration',
+                'autoload',
+                'No valid PSR-4 autoload paths found',
+            );
         }
     }
 
@@ -351,14 +439,22 @@ class ComposerChecker
         $config = $this->composer['config'] ?? [];
 
         if (!isset($config['sort-packages']) || $config['sort-packages'] !== true) {
-            $this->addIssue(self::MUST, "Missing sort-packages", "config.sort-packages",
-                "Must be set to true for consistent package ordering");
+            $this->addIssue(
+                self::MUST,
+                'Missing sort-packages',
+                'config.sort-packages',
+                'Must be set to true for consistent package ordering',
+            );
         }
 
         // Check platform settings if present
         if (isset($config['platform']['php'])) {
-            $this->addIssue(self::MAY, "Platform override", "config.platform.php",
-                "Platform PHP version override may cause dependency resolution issues");
+            $this->addIssue(
+                self::MAY,
+                'Platform override',
+                'config.platform.php',
+                'Platform PHP version override may cause dependency resolution issues',
+            );
         }
     }
 
@@ -372,20 +468,32 @@ class ComposerChecker
             foreach ($packages as $package => $version) {
                 // Check for wildcards
                 if ($version === '*') {
-                    $this->addIssue(self::MUST, "Wildcard dependency", "{$label}: {$package}",
-                        "Avoid '*' wildcards; use explicit version constraints");
+                    $this->addIssue(
+                        self::MUST,
+                        'Wildcard dependency',
+                        sprintf('%s: %s', $label, $package),
+                        "Avoid '*' wildcards; use explicit version constraints",
+                    );
                 }
 
                 // Check for dev constraints
-                if (preg_match('/^dev-/', $version)) {
-                    $this->addIssue(self::SHOULD, "Development dependency", "{$label}: {$package}",
-                        "Avoid dev-* constraints in {$label} unless necessary");
+                if (preg_match('/^dev-/', (string) $version)) {
+                    $this->addIssue(
+                        self::SHOULD,
+                        'Development dependency',
+                        sprintf('%s: %s', $label, $package),
+                        sprintf('Avoid dev-* constraints in %s unless necessary', $label),
+                    );
                 }
 
                 // Check for loose constraints in require (not dev)
-                if ($section === 'require' && preg_match('/^~0\.|^>=0\.|\*/', $version)) {
-                    $this->addIssue(self::SHOULD, "Loose constraint", "{$label}: {$package} {$version}",
-                        "Consider stricter version constraints for stability");
+                if ($section === 'require' && preg_match('/^~0\.|^>=0\.|\*/', (string) $version)) {
+                    $this->addIssue(
+                        self::SHOULD,
+                        'Loose constraint',
+                        sprintf('%s: %s %s', $label, $package, $version),
+                        'Consider stricter version constraints for stability',
+                    );
                 }
             }
         }
@@ -396,13 +504,17 @@ class ComposerChecker
         $required = $this->config['minimumPackageVersions'] ?? [];
         $require = array_merge(
             $this->composer['require'] ?? [],
-            $this->composer['require-dev'] ?? []
+            $this->composer['require-dev'] ?? [],
         );
 
         foreach ($required as $package => $minimum) {
             if (!isset($require[$package])) {
-                $this->addIssue(self::MUST, "Missing required package", "require: {$package}",
-                    "Package '{$package}' is required with minimum version '{$minimum}'");
+                $this->addIssue(
+                    self::MUST,
+                    'Missing required package',
+                    'require: ' . $package,
+                    sprintf("Package '%s' is required with minimum version '%s'", $package, $minimum),
+                );
                 continue;
             }
 
@@ -411,9 +523,13 @@ class ComposerChecker
             // Extract version numbers for comparison
             if ($this->lockData) {
                 $installed = $this->getInstalledVersion($package);
-                if ($installed && version_compare($installed, ltrim($minimum, '^~>=<!'), '<')) {
-                    $this->addIssue(self::MUST, "Version below minimum", "{$package}: {$installed}",
-                        "Installed version {$installed} is below required {$minimum}");
+                if ($installed && version_compare($installed, ltrim((string) $minimum, '^~>=<!'), '<')) {
+                    $this->addIssue(
+                        self::MUST,
+                        'Version below minimum',
+                        sprintf('%s: %s', $package, $installed),
+                        sprintf('Installed version %s is below required %s', $installed, $minimum),
+                    );
                 }
             }
         }
@@ -421,7 +537,9 @@ class ComposerChecker
 
     private function getInstalledVersion(string $package): ?string
     {
-        if (!$this->lockData) return null;
+        if (!$this->lockData) {
+            return null;
+        }
 
         foreach ($this->lockData['packages'] ?? [] as $pkg) {
             if ($pkg['name'] === $package) {
@@ -441,25 +559,39 @@ class ComposerChecker
     private function validateConflictReplaceProvide(): void
     {
         foreach (['conflict', 'replace', 'provide'] as $section) {
-            if (empty($this->composer[$section])) continue;
+            if (empty($this->composer[$section])) {
+                continue;
+            }
 
             foreach ($this->composer[$section] as $package => $constraint) {
-                if (!preg_match('/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i', $package)) {
-                    $this->addIssue(self::MUST, "Invalid package name", "{$section}: {$package}",
-                        "Package name must follow vendor/package format");
+                if (!preg_match('/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i', (string) $package)) {
+                    $this->addIssue(
+                        self::MUST,
+                        'Invalid package name',
+                        sprintf('%s: %s', $section, $package),
+                        'Package name must follow vendor/package format',
+                    );
                 }
 
-                if (!empty($constraint) && !preg_match('/^\^|~|>=|<=|>|<|!=|\d+\./', $constraint)) {
-                    $this->addIssue(self::SHOULD, "Invalid constraint", "{$section}: {$package} {$constraint}",
-                        "Version constraint appears invalid");
+                if (!empty($constraint) && !preg_match('/^\^|~|>=|<=|>|<|!=|\d+\./', (string) $constraint)) {
+                    $this->addIssue(
+                        self::SHOULD,
+                        'Invalid constraint',
+                        sprintf('%s: %s %s', $section, $package, $constraint),
+                        'Version constraint appears invalid',
+                    );
                 }
             }
         }
 
         // Check for self-replacement loops
         if (isset($this->composer['replace'][$this->composer['name'] ?? ''])) {
-            $this->addIssue(self::MUST, "Self-replacement loop", "replace: {$this->composer['name']}",
-                "Package cannot replace itself");
+            $this->addIssue(
+                self::MUST,
+                'Self-replacement loop',
+                'replace: ' . $this->composer['name'],
+                'Package cannot replace itself',
+            );
         }
     }
 
@@ -468,14 +600,22 @@ class ComposerChecker
         $suggest = $this->composer['suggest'] ?? [];
 
         foreach ($suggest as $package => $reason) {
-            if (!preg_match('/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i', $package)) {
-                $this->addIssue(self::SHOULD, "Invalid suggest package", "suggest: {$package}",
-                    "Package name format invalid");
+            if (!preg_match('/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i', (string) $package)) {
+                $this->addIssue(
+                    self::SHOULD,
+                    'Invalid suggest package',
+                    'suggest: ' . $package,
+                    'Package name format invalid',
+                );
             }
 
             if (empty($reason) || !is_string($reason)) {
-                $this->addIssue(self::SHOULD, "Missing suggest reason", "suggest: {$package}",
-                    "Suggestion should include reason for suggestion");
+                $this->addIssue(
+                    self::SHOULD,
+                    'Missing suggest reason',
+                    'suggest: ' . $package,
+                    'Suggestion should include reason for suggestion',
+                );
             }
         }
     }
@@ -486,13 +626,21 @@ class ComposerChecker
         $preferStable = $this->composer['prefer-stable'] ?? false;
 
         if ($stability !== 'stable') {
-            $this->addIssue(self::SHOULD, "Non-stable minimum", "minimum-stability: {$stability}",
-                "Minimum stability should be 'stable' for production packages");
+            $this->addIssue(
+                self::SHOULD,
+                'Non-stable minimum',
+                'minimum-stability: ' . $stability,
+                "Minimum stability should be 'stable' for production packages",
+            );
         }
 
         if ($preferStable !== true) {
-            $this->addIssue(self::SHOULD, "Missing prefer-stable", "prefer-stable",
-                "Should be set to true to prefer stable releases");
+            $this->addIssue(
+                self::SHOULD,
+                'Missing prefer-stable',
+                'prefer-stable',
+                'Should be set to true to prefer stable releases',
+            );
         }
     }
 
@@ -512,23 +660,36 @@ class ComposerChecker
 
             // Check for old GitLab type
             if ($type === 'gitlab') {
-                $this->addIssue(self::SHOULD, "Deprecated repository type", "repositories[{$key}]",
-                    "Use 'type: composer' with GitLab instead of legacy 'type: gitlab'");
+                $this->addIssue(
+                    self::SHOULD,
+                    'Deprecated repository type',
+                    sprintf('repositories[%s]', $key),
+                    "Use 'type: composer' with GitLab instead of legacy 'type: gitlab'",
+                );
             }
 
             // Check valid types
             $validTypes = ['composer', 'vcs', 'git', 'hg', 'perforce', 'artifact', 'path', 'package'];
             if (!in_array($type, $validTypes, true)) {
-                $this->addIssue(self::SHOULD, "Invalid repository type", "repositories[{$key}]: {$type}",
-                    "Type '{$type}' may not be supported");
+                $this->addIssue(
+                    self::SHOULD,
+                    'Invalid repository type',
+                    sprintf('repositories[%s]: %s', $key, $type),
+                    sprintf("Type '%s' may not be supported", $type),
+                );
             }
 
             // Check for duplicates
             if (!empty($url)) {
                 if (in_array($url, $seenUrls)) {
-                    $this->addIssue(self::SHOULD, "Duplicate repository", "repositories[{$key}]",
-                        "URL '{$url}' is defined multiple times");
+                    $this->addIssue(
+                        self::SHOULD,
+                        'Duplicate repository',
+                        sprintf('repositories[%s]', $key),
+                        sprintf("URL '%s' is defined multiple times", $url),
+                    );
                 }
+
                 $seenUrls[] = $url;
             }
         }
@@ -540,7 +701,7 @@ class ComposerChecker
         $postInstall = $scripts['post-install-cmd'] ?? [];
         $postUpdate = $scripts['post-update-cmd'] ?? [];
 
-        $checkCommands = function($commands, $event) {
+        $checkCommands = function ($commands, string $event): void {
             if (!is_array($commands)) {
                 $commands = [$commands];
             }
@@ -548,22 +709,34 @@ class ComposerChecker
             foreach ($commands as $cmd) {
                 // Check for paths in commands (should use bin)
                 if (preg_match('/\.\.\/|^\.\/|^\//', $cmd)) {
-                    $this->addIssue(self::SHOULD, "Hardcoded path in script", "scripts.{$event}",
-                        "Avoid paths in commands: '{$cmd}'. Use @putenv or vendor/bin/");
+                    $this->addIssue(
+                        self::SHOULD,
+                        'Hardcoded path in script',
+                        'scripts.' . $event,
+                        sprintf("Avoid paths in commands: '%s'. Use @putenv or vendor/bin/", $cmd),
+                    );
                 }
 
                 // Security checks
                 foreach ($this->securityPatterns as $pattern => $desc) {
                     if (preg_match($pattern, $cmd)) {
-                        $this->addIssue(self::MUST, "Security risk", "scripts.{$event}",
-                            "{$desc}: '{$cmd}'");
+                        $this->addIssue(
+                            self::MUST,
+                            'Security risk',
+                            'scripts.' . $event,
+                            sprintf("%s: '%s'", $desc, $cmd),
+                        );
                     }
                 }
 
-                foreach ($this->insecurePaths as $pattern => $desc) {
+                foreach (array_keys($this->insecurePaths) as $pattern) {
                     if (preg_match($pattern, $cmd)) {
-                        $this->addIssue(self::MUST, "Insecure path", "scripts.{$event}",
-                            "Command contains potentially dangerous path: '{$cmd}'");
+                        $this->addIssue(
+                            self::MUST,
+                            'Insecure path',
+                            'scripts.' . $event,
+                            sprintf("Command contains potentially dangerous path: '%s'", $cmd),
+                        );
                     }
                 }
             }
@@ -583,10 +756,14 @@ class ComposerChecker
             }
 
             foreach ($commands as $cmd) {
-                if (preg_match('/\brm\s+-rf\b/', $cmd) ||
-                    preg_match('/\bsocket_|exec|system|passthru|shell_exec/', $cmd)) {
-                    $this->addIssue(self::MUST, "Dangerous script command", "scripts.{$name}",
-                        "Script contains potentially dangerous command: '{$cmd}'");
+                if (preg_match('/\brm\s+-rf\b/', (string) $cmd) ||
+                    preg_match('/\bsocket_|exec|system|passthru|shell_exec/', (string) $cmd)) {
+                    $this->addIssue(
+                        self::MUST,
+                        'Dangerous script command',
+                        'scripts.' . $name,
+                        sprintf("Script contains potentially dangerous command: '%s'", $cmd),
+                    );
                 }
             }
         }
@@ -601,8 +778,12 @@ class ComposerChecker
         }
 
         if (!is_array($bin)) {
-            $this->addIssue(self::MUST, "Invalid bin format", "bin",
-                "Bin must be an array of paths");
+            $this->addIssue(
+                self::MUST,
+                'Invalid bin format',
+                'bin',
+                'Bin must be an array of paths',
+            );
             return;
         }
 
@@ -610,13 +791,21 @@ class ComposerChecker
             $fullPath = $this->rootDir . '/' . $binary;
 
             if (!file_exists($fullPath)) {
-                $this->addIssue(self::MUST, "Missing binary", "bin: {$binary}",
-                    "Binary file does not exist: {$fullPath}");
+                $this->addIssue(
+                    self::MUST,
+                    'Missing binary',
+                    'bin: ' . $binary,
+                    'Binary file does not exist: ' . $fullPath,
+                );
             } elseif (!is_executable($fullPath)) {
                 // Note: Windows doesn't have executable bit, so this is Unix-specific
                 if (PHP_OS_FAMILY !== 'Windows') {
-                    $this->addIssue(self::SHOULD, "Non-executable binary", "bin: {$binary}",
-                        "Binary should be executable (chmod +x)");
+                    $this->addIssue(
+                        self::SHOULD,
+                        'Non-executable binary',
+                        'bin: ' . $binary,
+                        'Binary should be executable (chmod +x)',
+                    );
                 }
             }
         }
@@ -627,19 +816,23 @@ class ComposerChecker
         $extra = $this->composer['extra'] ?? [];
 
         // Check Symfony bundle class if type is symfony-bundle
-        if (($this->composer['type'] ?? '') === 'symfony-bundle') {
-            if (empty($extra['symfony']['class'])) {
-                $this->addIssue(self::SHOULD, "Missing bundle class", "extra.symfony.class",
-                    "Symfony bundles should define the bundle class in extra.symfony.class");
-            }
+        if (($this->composer['type'] ?? '') === 'symfony-bundle' && empty($extra['symfony']['class'])) {
+            $this->addIssue(
+                self::SHOULD,
+                'Missing bundle class',
+                'extra.symfony.class',
+                'Symfony bundles should define the bundle class in extra.symfony.class',
+            );
         }
 
         // Check for laravel providers
-        if (isset($extra['laravel'])) {
-            if (empty($extra['laravel']['providers'])) {
-                $this->addIssue(self::MAY, "Missing Laravel providers", "extra.laravel",
-                    "Laravel packages typically auto-register providers");
-            }
+        if (isset($extra['laravel']) && empty($extra['laravel']['providers'])) {
+            $this->addIssue(
+                self::MAY,
+                'Missing Laravel providers',
+                'extra.laravel',
+                'Laravel packages typically auto-register providers',
+            );
         }
     }
 
@@ -648,19 +841,31 @@ class ComposerChecker
         $support = $this->composer['support'] ?? [];
 
         if (empty($support['issues'])) {
-            $this->addIssue(self::MAY, "Missing support info", "support.issues",
-                "Consider adding issues URL for bug reports");
+            $this->addIssue(
+                self::MAY,
+                'Missing support info',
+                'support.issues',
+                'Consider adding issues URL for bug reports',
+            );
         } elseif ($this->config['isPublic'] && !empty($this->config['owner'])) {
-            $expected = "https://github.com/{$this->config['owner']}/";
-            if (strpos($support['issues'], $expected) !== 0) {
-                $this->addIssue(self::SHOULD, "Issues URL mismatch", "support.issues",
-                    "Issues URL should match GitHub repo pattern: {$expected}");
+            $expected = sprintf('https://github.com/%s/', $this->config['owner']);
+            if (!str_starts_with((string) $support['issues'], $expected)) {
+                $this->addIssue(
+                    self::SHOULD,
+                    'Issues URL mismatch',
+                    'support.issues',
+                    'Issues URL should match GitHub repo pattern: ' . $expected,
+                );
             }
         }
 
         if (!empty($support['source']) && !filter_var($support['source'], FILTER_VALIDATE_URL)) {
-            $this->addIssue(self::SHOULD, "Invalid source URL", "support.source",
-                "Source URL appears invalid");
+            $this->addIssue(
+                self::SHOULD,
+                'Invalid source URL',
+                'support.source',
+                'Source URL appears invalid',
+            );
         }
     }
 
@@ -677,13 +882,21 @@ class ComposerChecker
             $type = $entry['type'] ?? '';
 
             if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
-                $this->addIssue(self::SHOULD, "Invalid funding URL", "funding",
-                    "Funding entry has invalid or missing URL");
+                $this->addIssue(
+                    self::SHOULD,
+                    'Invalid funding URL',
+                    'funding',
+                    'Funding entry has invalid or missing URL',
+                );
             }
 
             if (!in_array($type, ['github', 'open_collective', 'tidelift', 'community_bridge', 'liberapay', 'issuehunt', 'ko_fi', 'other'])) {
-                $this->addIssue(self::MAY, "Unknown funding type", "funding",
-                    "Funding type '{$type}' may not be recognized by all tools");
+                $this->addIssue(
+                    self::MAY,
+                    'Unknown funding type',
+                    'funding',
+                    sprintf("Funding type '%s' may not be recognized by all tools", $type),
+                );
             }
         }
     }
@@ -692,8 +905,12 @@ class ComposerChecker
     {
         if (!empty($this->composer['abandoned'])) {
             $replacement = is_string($this->composer['abandoned']) ? $this->composer['abandoned'] : 'true';
-            $this->addIssue(self::SHOULD, "Package abandoned", "abandoned",
-                "This package is marked as abandoned. Replacement: {$replacement}");
+            $this->addIssue(
+                self::SHOULD,
+                'Package abandoned',
+                'abandoned',
+                'This package is marked as abandoned. Replacement: ' . $replacement,
+            );
         }
     }
 
@@ -707,8 +924,12 @@ class ComposerChecker
 
         $excludes = $archive['exclude'] ?? [];
         if (!is_array($excludes)) {
-            $this->addIssue(self::SHOULD, "Invalid archive exclude", "archive.exclude",
-                "Archive exclude must be an array of patterns");
+            $this->addIssue(
+                self::SHOULD,
+                'Invalid archive exclude',
+                'archive.exclude',
+                'Archive exclude must be an array of patterns',
+            );
         }
     }
 
@@ -720,18 +941,30 @@ class ComposerChecker
         $project = explode('/', $name)[1] ?? '';
 
         if (empty($homepage)) {
-            $this->addIssue(self::MUST, "Missing homepage", "homepage",
-                "Public packages require homepage URL");
-        } elseif (!preg_match('/^https:\/\/github\.com\/' . preg_quote($this->config['owner'], '/') . '\/' . preg_quote($project, '/') . '$/i', $homepage)) {
-            $this->addIssue(self::MUST, "Invalid homepage format", "homepage: {$homepage}",
-                "Public project homepage must match: https://github.com/{$this->config['owner']}/{$project}");
+            $this->addIssue(
+                self::MUST,
+                'Missing homepage',
+                'homepage',
+                'Public packages require homepage URL',
+            );
+        } elseif (!preg_match('/^https:\/\/github\.com\/' . preg_quote((string) $this->config['owner'], '/') . '\/' . preg_quote($project, '/') . '$/i', (string) $homepage)) {
+            $this->addIssue(
+                self::MUST,
+                'Invalid homepage format',
+                'homepage: ' . $homepage,
+                sprintf('Public project homepage must match: https://github.com/%s/%s', $this->config['owner'], $project),
+            );
         }
 
         // Authors check
         $authors = $this->composer['authors'] ?? [];
         if (empty($authors) || !is_array($authors)) {
-            $this->addIssue(self::MUST, "Missing authors", "authors",
-                "Public projects must include authors array");
+            $this->addIssue(
+                self::MUST,
+                'Missing authors',
+                'authors',
+                'Public projects must include authors array',
+            );
         } else {
             $foundAuthor = false;
             foreach ($authors as $author) {
@@ -741,27 +974,43 @@ class ComposerChecker
 
                     // Validate other fields
                     if (($author['homepage'] ?? '') !== 'https://nurd.site/') {
-                        $this->addIssue(self::MUST, "Invalid author homepage", "authors[].homepage",
-                            "Author homepage must be 'https://nurd.site/'");
+                        $this->addIssue(
+                            self::MUST,
+                            'Invalid author homepage',
+                            'authors[].homepage',
+                            "Author homepage must be 'https://nurd.site/'",
+                        );
                     }
 
                     if (($author['role'] ?? '') !== 'Developer') {
-                        $this->addIssue(self::MUST, "Invalid author role", "authors[].role",
-                            "Author role must be 'Developer'");
+                        $this->addIssue(
+                            self::MUST,
+                            'Invalid author role',
+                            'authors[].role',
+                            "Author role must be 'Developer'",
+                        );
                     }
                 }
             }
 
             if (!$foundAuthor) {
-                $this->addIssue(self::MUST, "Missing required author", "authors",
-                    "Must include author: name='Douglas Green', email='douglas@nurd.site', homepage='https://nurd.site/', role='Developer'");
+                $this->addIssue(
+                    self::MUST,
+                    'Missing required author',
+                    'authors',
+                    "Must include author: name='Douglas Green', email='douglas@nurd.site', homepage='https://nurd.site/', role='Developer'",
+                );
             }
         }
 
         // Keywords already checked in validateKeywords but ensure present
         if (empty($this->composer['keywords']) || !is_array($this->composer['keywords'])) {
-            $this->addIssue(self::MUST, "Missing keywords (public)", "keywords",
-                "Public projects must include keywords array");
+            $this->addIssue(
+                self::MUST,
+                'Missing keywords (public)',
+                'keywords',
+                'Public projects must include keywords array',
+            );
         }
     }
 
@@ -771,14 +1020,19 @@ class ComposerChecker
         $composerPath = trim(shell_exec('which composer 2>/dev/null') ?: '');
 
         if (empty($composerPath)) {
-            $this->addIssue(self::MAY, "Composer not found", "system",
-                "Cannot run 'composer validate --strict' - composer not in PATH");
+            $this->addIssue(
+                self::MAY,
+                'Composer not found',
+                'system',
+                "Cannot run 'composer validate --strict' - composer not in PATH",
+            );
             return;
         }
 
-        $command = sprintf('cd %s && %s validate --strict --no-ansi 2>&1',
+        $command = sprintf(
+            'cd %s && %s validate --strict --no-ansi 2>&1',
             escapeshellarg($this->rootDir),
-            escapeshellarg($composerPath)
+            escapeshellarg($composerPath),
         );
 
         $output = [];
@@ -789,7 +1043,7 @@ class ComposerChecker
             foreach ($output as $line) {
                 if (preg_match('/(error|warning):\s*(.+)/i', $line, $matches)) {
                     $type = strtolower($matches[1]) === 'error' ? self::MUST : self::SHOULD;
-                    $this->addIssue($type, "Composer validation", "composer validate", $matches[2]);
+                    $this->addIssue($type, 'Composer validation', 'composer validate', $matches[2]);
                 }
             }
         }
@@ -806,40 +1060,55 @@ class ComposerChecker
         $schema = @file_get_contents($schemaUrl);
 
         if ($schema === false) {
-            $this->addIssue(self::MAY, "Schema fetch failed", "validation",
-                "Could not fetch Composer schema from {$schemaUrl}");
+            $this->addIssue(
+                self::MAY,
+                'Schema fetch failed',
+                'validation',
+                'Could not fetch Composer schema from ' . $schemaUrl,
+            );
             return;
         }
 
         $schemaData = json_decode($schema);
         if (!$schemaData) {
-            $this->addIssue(self::MAY, "Invalid schema", "validation",
-                "Could not parse Composer schema JSON");
+            $this->addIssue(
+                self::MAY,
+                'Invalid schema',
+                'validation',
+                'Could not parse Composer schema JSON',
+            );
             return;
         }
 
         // Use justinrainbow/json-schema if available, otherwise skip detailed validation
         if (!class_exists('JsonSchema\Validator')) {
-            $this->addIssue(self::MAY, "Schema validator missing", "validation",
-                "Install justinrainbow/json-schema for schema validation");
+            $this->addIssue(
+                self::MAY,
+                'Schema validator missing',
+                'validation',
+                'Install justinrainbow/json-schema for schema validation',
+            );
             return;
         }
 
-        $validator = new \JsonSchema\Validator();
+        $validator = new Validator();
         $validator->validate($this->composer, $schemaData);
 
         if (!$validator->isValid()) {
             foreach ($validator->getErrors() as $error) {
                 $property = $error['property'] ?? 'root';
-                $this->addIssue(self::MUST, "Schema violation", $property, $error['message']);
+                $this->addIssue(self::MUST, 'Schema violation', $property, $error['message']);
             }
         }
     }
 
     private function toStudlyCase(string $string): string
     {
-        return str_replace(['-', '_'], '',
-            ucwords(strtolower($string), '-_'));
+        return str_replace(
+            ['-', '_'],
+            '',
+            ucwords(strtolower($string), '-_'),
+        );
     }
 
     private function addIssue(string $level, string $category, string $context, string $message): void
@@ -848,24 +1117,24 @@ class ComposerChecker
             'level' => $level,
             'category' => $category,
             'context' => $context,
-            'message' => $message
+            'message' => $message,
         ];
     }
 
     private function printReport(): void
     {
-        $mustIssues = array_filter($this->issues, fn($i) => $i['level'] === self::MUST);
-        $shouldIssues = array_filter($this->issues, fn($i) => $i['level'] === self::SHOULD);
-        $mayIssues = array_filter($this->issues, fn($i) => $i['level'] === self::MAY);
+        $mustIssues = array_filter($this->issues, fn (array $i): bool => $i['level'] === self::MUST);
+        $shouldIssues = array_filter($this->issues, fn (array $i): bool => $i['level'] === self::SHOULD);
+        $mayIssues = array_filter($this->issues, fn (array $i): bool => $i['level'] === self::MAY);
 
-        echo "\n" . str_repeat("=", 60) . "\n";
+        echo "\n" . str_repeat('=', 60) . "\n";
         echo "Composer Standards Compliance Report\n";
-        echo str_repeat("=", 60) . "\n\n";
+        echo str_repeat('=', 60) . "\n\n";
 
         // Print MUST issues (red)
-        if (!empty($mustIssues)) {
+        if ($mustIssues !== []) {
             echo "\033[31mMUST (Critical Violations): " . count($mustIssues) . "\033[0m\n";
-            echo str_repeat("-", 60) . "\n";
+            echo str_repeat('-', 60) . "\n";
             foreach ($mustIssues as $issue) {
                 echo sprintf("\033[31m[%s]\033[0m %s\n", $issue['category'], $issue['context']);
                 echo "  → {$issue['message']}\n\n";
@@ -873,9 +1142,9 @@ class ComposerChecker
         }
 
         // Print SHOULD issues (yellow)
-        if (!empty($shouldIssues)) {
+        if ($shouldIssues !== []) {
             echo "\033[33mSHOULD (Recommendations): " . count($shouldIssues) . "\033[0m\n";
-            echo str_repeat("-", 60) . "\n";
+            echo str_repeat('-', 60) . "\n";
             foreach ($shouldIssues as $issue) {
                 echo sprintf("\033[33m[%s]\033[0m %s\n", $issue['category'], $issue['context']);
                 echo "  → {$issue['message']}\n\n";
@@ -883,16 +1152,16 @@ class ComposerChecker
         }
 
         // Print MAY issues (cyan)
-        if (!empty($mayIssues)) {
+        if ($mayIssues !== []) {
             echo "\033[36mMAY (Suggestions): " . count($mayIssues) . "\033[0m\n";
-            echo str_repeat("-", 60) . "\n";
+            echo str_repeat('-', 60) . "\n";
             foreach ($mayIssues as $issue) {
                 echo sprintf("\033[36m[%s]\033[0m %s\n", $issue['category'], $issue['context']);
                 echo "  → {$issue['message']}\n\n";
             }
         }
 
-        if (empty($this->issues)) {
+        if ($this->issues === []) {
             echo "\033[32m✓ All composer.json standards met\033[0m\n";
         }
 
@@ -901,18 +1170,23 @@ class ComposerChecker
         echo "--------\n";
         printf("Project: %s\n", $this->composer['name'] ?? 'unknown');
         printf("Type: %s\n", $this->composer['type'] ?? 'library');
-        printf("Total issues: %d (MUST: %d, SHOULD: %d, MAY: %d)\n",
-            count($this->issues), count($mustIssues), count($shouldIssues), count($mayIssues));
+        printf(
+            "Total issues: %d (MUST: %d, SHOULD: %d, MAY: %d)\n",
+            count($this->issues),
+            count($mustIssues),
+            count($shouldIssues),
+            count($mayIssues),
+        );
 
         // Compliance score
         $totalChecks = 25; // Approximate number of validation rules
-        $deduction = (count($mustIssues) * 4) + (count($shouldIssues) * 1);
+        $deduction = (count($mustIssues) * 4) + (count($shouldIssues));
         $compliance = max(0, 100 - ($deduction * 100 / $totalChecks));
         printf("Compliance score: %d%%\n", $compliance);
 
         echo "\n";
 
-        if (!empty($mustIssues)) {
+        if ($mustIssues !== []) {
             echo "\033[31m⚠️  Critical violations detected - fix before committing\033[0m\n";
             exit(1);
         }

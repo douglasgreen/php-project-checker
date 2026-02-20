@@ -7,60 +7,68 @@
  * and Docs-as-Code standards.
  */
 
-namespace DouglasGreen\PHPProjectChecker;
-
 declare(strict_types=1);
+
+namespace DouglasGreen\PHPProjectChecker;
 
 class DocStandardsChecker
 {
-    private string $rootDir;
+    // RFC 2119 levels
+    public const MUST = 'MUST';
+
+    public const SHOULD = 'SHOULD';
+
+    public const MAY = 'MAY';
+
+    private readonly string $rootDir;
+
     private array $files = [];
+
     private array $markdownFiles = [];
+
     private array $issues = [];
+
     private array $linkGraph = [];
+
     private array $requiredFiles = [
         'root' => [
             'README.md' => 'Project explanation and installation guide',
             'CHANGELOG.md' => 'Version history reference',
-            'LICENSE' => 'Legal terms'
+            'LICENSE' => 'Legal terms',
         ],
         'docs' => [
             'docs/index.md' => 'Documentation navigation hub',
             'docs/development/setup.md' => 'Development environment setup',
             'docs/development/testing.md' => 'Testing procedures',
-            'docs/architecture.md' => 'System architecture explanation'
-        ]
+            'docs/architecture.md' => 'System architecture explanation',
+        ],
     ];
-
-    // RFC 2119 levels
-    const MUST = 'MUST';
-    const SHOULD = 'SHOULD';
-    const MAY = 'MAY';
 
     // Patterns
     private array $forbiddenWords = ['simply', 'just', 'obviously', 'clearly', 'basically', 'easily'];
+
     private array $securityPatterns = [
         '/\b(sk-[a-zA-Z0-9]{20,})/i' => 'Exposed API key (OpenAI format)',
         '/\b(ghp_[a-zA-Z0-9]{36})/i' => 'Exposed GitHub token',
         '/\b(AKIA[0-9A-Z]{16})/' => 'Exposed AWS Access Key ID',
         '/(?:password|passwd|pwd)\s*[=:]\s*["\'][^"\'<>]+["\']/i' => 'Hardcoded password',
         '/(?:api[_-]?key|apikey)\s*[=:]\s*["\'][^"\'<>]+["\']/i' => 'Hardcoded API key',
-        '/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/' => 'IP address (verify not sensitive)'
+        '/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/' => 'IP address (verify not sensitive)',
     ];
 
     public function __construct(string $directory)
     {
         $this->rootDir = realpath($directory) ?: getcwd();
         if (!$this->isGitRepository()) {
-            fwrite(STDERR, "Error: Not a git repository: {$this->rootDir}\n");
+            fwrite(STDERR, sprintf('Error: Not a git repository: %s%s', $this->rootDir, PHP_EOL));
             exit(1);
         }
     }
 
     public function run(): void
     {
-        echo "Scanning documentation in: {$this->rootDir}\n";
-        echo str_repeat("=", 60) . "\n\n";
+        echo sprintf('Scanning documentation in: %s%s', $this->rootDir, PHP_EOL);
+        echo str_repeat('=', 60) . "\n\n";
 
         $this->loadGitFiles();
         $this->checkRequiredFiles();
@@ -89,11 +97,9 @@ class DocStandardsChecker
             exit(1);
         }
 
-        $this->markdownFiles = array_filter($this->files, function($file) {
-            return preg_match('/\.md$/i', $file);
-        });
+        $this->markdownFiles = array_filter($this->files, fn(string $file) => preg_match('/\.md$/i', $file));
 
-        echo "Found " . count($this->markdownFiles) . " Markdown files\n";
+        echo 'Found ' . count($this->markdownFiles) . " Markdown files\n";
     }
 
     private function checkRequiredFiles(): void
@@ -101,30 +107,43 @@ class DocStandardsChecker
         // Check root files (2.3.1)
         foreach ($this->requiredFiles['root'] as $file => $description) {
             if (!in_array($file, $this->files)) {
-                $this->addIssue(self::MUST, "Missing required file", $file,
-                    "Required per section 2.3.1: {$description}");
+                $this->addIssue(
+                    self::MUST,
+                    'Missing required file',
+                    $file,
+                    'Required per section 2.3.1: ' . $description,
+                );
             }
         }
 
         // Check docs structure (2.3.2, 2.3.3)
         foreach ($this->requiredFiles['docs'] as $file => $description) {
             if (!in_array($file, $this->files)) {
-                $this->addIssue(self::MUST, "Missing required documentation", $file,
-                    "Required per sections 2.3.2/2.3.3: {$description}");
+                $this->addIssue(
+                    self::MUST,
+                    'Missing required documentation',
+                    $file,
+                    'Required per sections 2.3.2/2.3.3: ' . $description,
+                );
             }
         }
 
         // Check for ADR directory (2.3.3)
         $hasAdr = false;
         foreach ($this->files as $file) {
-            if (strpos($file, 'docs/adr/') === 0 && preg_match('/^\d{4}-/', basename($file))) {
+            if (str_starts_with((string) $file, 'docs/adr/') && preg_match('/^\d{4}-/', basename((string) $file))) {
                 $hasAdr = true;
                 break;
             }
         }
+
         if (!$hasAdr && in_array('docs/architecture.md', $this->files)) {
-            $this->addIssue(self::SHOULD, "Missing ADR directory", 'docs/adr/',
-                "Architecture Decision Records recommended per 2.3.3 (pattern: NNNN-decision-title.md)");
+            $this->addIssue(
+                self::SHOULD,
+                'Missing ADR directory',
+                'docs/adr/',
+                'Architecture Decision Records recommended per 2.3.3 (pattern: NNNN-decision-title.md)',
+            );
         }
     }
 
@@ -132,16 +151,24 @@ class DocStandardsChecker
     {
         // Check for docs/ index.md (2.2.1)
         if (is_dir($this->rootDir . '/docs') && !in_array('docs/index.md', $this->files)) {
-            $this->addIssue(self::MUST, "Missing navigation hub", 'docs/index.md',
-                "Required per 2.2.1: docs/ directory must have index.md as navigation hub");
+            $this->addIssue(
+                self::MUST,
+                'Missing navigation hub',
+                'docs/index.md',
+                'Required per 2.2.1: docs/ directory must have index.md as navigation hub',
+            );
         }
 
         // Check for CHANGELOG format
         if (in_array('CHANGELOG.md', $this->files)) {
             $content = $this->getFileContent('CHANGELOG.md');
             if (!preg_match('/## \[\d+\.\d+/', $content) && !preg_match('/## \d+\.\d+/', $content)) {
-                $this->addIssue(self::SHOULD, "Changelog format", 'CHANGELOG.md',
-                    "Consider using Keep a Changelog format (## [1.0.0])");
+                $this->addIssue(
+                    self::SHOULD,
+                    'Changelog format',
+                    'CHANGELOG.md',
+                    'Consider using Keep a Changelog format (## [1.0.0])',
+                );
             }
         }
     }
@@ -149,19 +176,27 @@ class DocStandardsChecker
     private function checkFileNaming(): void
     {
         foreach ($this->markdownFiles as $file) {
-            $basename = basename($file);
+            $basename = basename((string) $file);
 
             // Check kebab-case (2.2.2)
             if (!preg_match('/^[a-z0-9]+(-[a-z0-9]+)*\.md$/', $basename) &&
                 !in_array($basename, ['README.md', 'CHANGELOG.md', 'LICENSE.md', 'CONTRIBUTING.md'])) {
-                $this->addIssue(self::MUST, "Invalid filename", $file,
-                    "Filenames must use kebab-case (e.g., deployment-guide.md) per 2.2.2");
+                $this->addIssue(
+                    self::MUST,
+                    'Invalid filename',
+                    $file,
+                    'Filenames must use kebab-case (e.g., deployment-guide.md) per 2.2.2',
+                );
             }
 
             // Check for spaces or underscores
             if (preg_match('/[ _]/', $basename)) {
-                $this->addIssue(self::MUST, "Invalid filename characters", $file,
-                    "Use hyphens, not spaces or underscores per 2.2.2");
+                $this->addIssue(
+                    self::MUST,
+                    'Invalid filename characters',
+                    $file,
+                    'Use hyphens, not spaces or underscores per 2.2.2',
+                );
             }
         }
     }
@@ -174,20 +209,32 @@ class DocStandardsChecker
             // Check for UTF-8 (2.2.3)
             $content = file_get_contents($fullPath);
             if (!mb_check_encoding($content, 'UTF-8')) {
-                $this->addIssue(self::MUST, "Invalid encoding", $file,
-                    "Files must be UTF-8 encoded per 2.2.3");
+                $this->addIssue(
+                    self::MUST,
+                    'Invalid encoding',
+                    $file,
+                    'Files must be UTF-8 encoded per 2.2.3',
+                );
             }
 
             // Check for CRLF line endings (2.2.3)
-            if (strpos($content, "\r\n") !== false) {
-                $this->addIssue(self::MUST, "Invalid line endings", $file,
-                    "Files must use Unix line endings (LF), not CRLF per 2.2.3");
+            if (str_contains($content, "\r\n")) {
+                $this->addIssue(
+                    self::MUST,
+                    'Invalid line endings',
+                    $file,
+                    'Files must use Unix line endings (LF), not CRLF per 2.2.3',
+                );
             }
 
             // Check for trailing whitespace (6.1.5)
             if (preg_match('/[ \t]+$/m', $content)) {
-                $this->addIssue(self::MUST, "Trailing whitespace", $file,
-                    "Remove trailing whitespace at end of lines per 6.1.5");
+                $this->addIssue(
+                    self::MUST,
+                    'Trailing whitespace',
+                    $file,
+                    'Remove trailing whitespace at end of lines per 6.1.5',
+                );
             }
         }
     }
@@ -214,7 +261,7 @@ class DocStandardsChecker
         $prevLevel = 0;
 
         foreach ($lines as $i => $line) {
-            if (!preg_match('/^(#{1,6})\s+(.+)$/', $line, $matches)) {
+            if (!preg_match('/^(#{1,6})\s+(.+)$/', (string) $line, $matches)) {
                 continue;
             }
 
@@ -224,33 +271,48 @@ class DocStandardsChecker
             // Check single H1 (6.1.1)
             if ($level === 1) {
                 if ($hasH1) {
-                    $this->addIssue(self::MUST, "Multiple H1 headings", $file,
-                        "Line " . ($i + 1) . ": Document must have exactly one H1 per 6.1.1");
+                    $this->addIssue(
+                        self::MUST,
+                        'Multiple H1 headings',
+                        $file,
+                        'Line ' . ($i + 1) . ': Document must have exactly one H1 per 6.1.1',
+                    );
                 }
+
                 $hasH1 = true;
             }
 
             // Check no skipped levels (6.2.2)
             if ($prevLevel > 0 && $level > $prevLevel + 1) {
-                $this->addIssue(self::MUST, "Skipped heading level", $file,
-                    "Line " . ($i + 1) . ": H" . ($prevLevel + 1) . " skipped (H{$prevLevel} -> H{$level}) per 6.2.2");
+                $this->addIssue(
+                    self::MUST,
+                    'Skipped heading level',
+                    $file,
+                    'Line ' . ($i + 1) . ': H' . ($prevLevel + 1) . sprintf(' skipped (H%d -> H%d) per 6.2.2', $prevLevel, $level),
+                );
             }
 
             $prevLevel = $level;
 
             // Check sentence case (3.1.5)
-            if ($level <= 3 && preg_match('/[A-Z]{2,}/', $text) && !preg_match('/^[A-Z][a-z]+( [a-z]+)*$/', $text)) {
-                // Allow acronyms and proper nouns, but flag Title Case
-                if (preg_match('/^[A-Z][a-z]+ [A-Z]/', $text)) {
-                    $this->addIssue(self::MUST, "Heading case", $file,
-                        "Line " . ($i + 1) . ": Use sentence case ('" . strtolower($text) . "') not Title Case per 3.1.5");
-                }
+            // Allow acronyms and proper nouns, but flag Title Case
+            if ($level <= 3 && preg_match('/[A-Z]{2,}/', $text) && !preg_match('/^[A-Z][a-z]+( [a-z]+)*$/', $text) && preg_match('/^[A-Z][a-z]+ [A-Z]/', $text)) {
+                $this->addIssue(
+                    self::MUST,
+                    'Heading case',
+                    $file,
+                    'Line ' . ($i + 1) . ": Use sentence case ('" . strtolower($text) . "') not Title Case per 3.1.5",
+                );
             }
         }
 
         if (!$hasH1) {
-            $this->addIssue(self::MUST, "Missing H1", $file,
-                "Document must have exactly one H1 heading per 6.1.1");
+            $this->addIssue(
+                self::MUST,
+                'Missing H1',
+                $file,
+                'Document must have exactly one H1 heading per 6.1.1',
+            );
         }
     }
 
@@ -260,15 +322,23 @@ class DocStandardsChecker
         if (preg_match_all('/^```\s*$/m', $content, $matches, PREG_OFFSET_CAPTURE)) {
             foreach ($matches[0] as $match) {
                 $line = substr_count(substr($content, 0, $match[1]), "\n") + 1;
-                $this->addIssue(self::MUST, "Missing syntax highlighting", $file,
-                    "Line {$line}: Code blocks must specify language (e.g., ```php) per 4.2.2");
+                $this->addIssue(
+                    self::MUST,
+                    'Missing syntax highlighting',
+                    $file,
+                    sprintf('Line %d: Code blocks must specify language (e.g., ```php) per 4.2.2', $line),
+                );
             }
         }
 
         // Check for indented code blocks (discouraged in favor of fences)
         if (preg_match('/\n    [^\s*]/', $content)) {
-            $this->addIssue(self::SHOULD, "Indented code block", $file,
-                "Use fenced code blocks (```) instead of indentation per 6.1.2");
+            $this->addIssue(
+                self::SHOULD,
+                'Indented code block',
+                $file,
+                'Use fenced code blocks (```) instead of indentation per 6.1.2',
+            );
         }
     }
 
@@ -276,22 +346,34 @@ class DocStandardsChecker
     {
         // Check for fluff words (3.2.2)
         foreach ($this->forbiddenWords as $word) {
-            if (preg_match("/\b{$word}\b/i", $content)) {
-                $this->addIssue(self::MUST, "Fluff words", $file,
-                    "Remove '{$word}' per 3.2.2 (avoid words that alienate struggling users)");
+            if (preg_match(sprintf('/\b%s\b/i', $word), $content)) {
+                $this->addIssue(
+                    self::MUST,
+                    'Fluff words',
+                    $file,
+                    sprintf("Remove '%s' per 3.2.2 (avoid words that alienate struggling users)", $word),
+                );
             }
         }
 
         // Check for passive voice indicators (3.1.1) - heuristic
         if (preg_match('/\b(is|was|were|been|be|being)\s+(?:configured|installed|created|updated|deleted|processed|generated|used|done|made)\b/i', $content)) {
-            $this->addIssue(self::SHOULD, "Passive voice detected", $file,
-                "Use active voice ('Click Save') not passive ('Save should be clicked') per 3.1.1");
+            $this->addIssue(
+                self::SHOULD,
+                'Passive voice detected',
+                $file,
+                "Use active voice ('Click Save') not passive ('Save should be clicked') per 3.1.1",
+            );
         }
 
         // Check for future tense (3.1.2)
         if (preg_match('/\b(will|shall)\s+(?:return|display|show|create|update)\b/i', $content)) {
-            $this->addIssue(self::MUST, "Future tense", $file,
-                "Use present tense ('The API returns') not future ('The API will return') per 3.1.2");
+            $this->addIssue(
+                self::MUST,
+                'Future tense',
+                $file,
+                "Use present tense ('The API returns') not future ('The API will return') per 3.1.2",
+            );
         }
 
         // Check list punctuation consistency (3.1.7)
@@ -304,9 +386,9 @@ class DocStandardsChecker
         $listType = null; // 'fragment' or 'sentence'
 
         foreach ($lines as $i => $line) {
-            if (preg_match('/^[\s]*[-*+]\s+(.+)$/', $line, $matches)) {
+            if (preg_match('/^[\s]*[-*+]\s+(.+)$/', (string) $line, $matches)) {
                 $text = $matches[1];
-                $hasPeriod = substr($text, -1) === '.';
+                $hasPeriod = str_ends_with($text, '.');
 
                 if (!$inList) {
                     $inList = true;
@@ -314,12 +396,16 @@ class DocStandardsChecker
                 } else {
                     $currentType = $hasPeriod ? 'sentence' : 'fragment';
                     if ($currentType !== $listType) {
-                        $this->addIssue(self::MUST, "Inconsistent list punctuation", $file,
-                            "Line " . ($i + 1) . ": Mixed periods and no periods in list per 3.1.7");
+                        $this->addIssue(
+                            self::MUST,
+                            'Inconsistent list punctuation',
+                            $file,
+                            'Line ' . ($i + 1) . ': Mixed periods and no periods in list per 3.1.7',
+                        );
                         break;
                     }
                 }
-            } else if (!preg_match('/^\s*$/', $line)) {
+            } elseif (!preg_match('/^\s*$/', (string) $line)) {
                 $inList = false;
             }
         }
@@ -329,14 +415,22 @@ class DocStandardsChecker
     {
         // Check for "click here" (6.1.4, 7.1.3)
         if (preg_match('/\[click here\]/i', $content)) {
-            $this->addIssue(self::MUST, "Non-descriptive link", $file,
-                "Use descriptive link text, not 'click here' per 6.1.4/7.1.3");
+            $this->addIssue(
+                self::MUST,
+                'Non-descriptive link',
+                $file,
+                "Use descriptive link text, not 'click here' per 6.1.4/7.1.3",
+            );
         }
 
         // Check for bare URLs (6.1.4)
         if (preg_match('/(?<!\[)[^(\[]https?:\/\/\S+/i', $content)) {
-            $this->addIssue(self::SHOULD, "Bare URL", $file,
-                "Use [text](url) format, not bare URLs per 6.1.4");
+            $this->addIssue(
+                self::SHOULD,
+                'Bare URL',
+                $file,
+                'Use [text](url) format, not bare URLs per 6.1.4',
+            );
         }
 
         // Check relative links for local files (9.3.1)
@@ -351,7 +445,9 @@ class DocStandardsChecker
 
             // Remove anchor
             $linkPath = preg_replace('/#.*/', '', $link);
-            if (empty($linkPath)) continue;
+            if (empty($linkPath)) {
+                continue;
+            }
 
             // Resolve relative to file
             $dir = dirname($file);
@@ -361,8 +457,12 @@ class DocStandardsChecker
             // Check if exists
             if (!in_array($targetPath, $this->files) &&
                 !in_array($targetPath . '.md', $this->files)) {
-                $this->addIssue(self::MUST, "Broken internal link", $file,
-                    "Link to '{$link}' points to non-existent file");
+                $this->addIssue(
+                    self::MUST,
+                    'Broken internal link',
+                    $file,
+                    sprintf("Link to '%s' points to non-existent file", $link),
+                );
             }
         }
     }
@@ -371,8 +471,12 @@ class DocStandardsChecker
     {
         foreach ($this->securityPatterns as $pattern => $description) {
             if (preg_match($pattern, $content)) {
-                $this->addIssue(self::MUST, "Security risk: {$description}", $file,
-                    "Use placeholder variables like <YOUR_API_KEY> per 4.2.4/8.1.2");
+                $this->addIssue(
+                    self::MUST,
+                    'Security risk: ' . $description,
+                    $file,
+                    'Use placeholder variables like <YOUR_API_KEY> per 4.2.4/8.1.2',
+                );
             }
         }
     }
@@ -382,21 +486,29 @@ class DocStandardsChecker
         // Check for YAML frontmatter (1.3.3)
         if (preg_match('/^---\s*\n/', $content)) {
             if (!preg_match('/^---\s*\n.*?\n---\s*\n/s', $content)) {
-                $this->addIssue(self::SHOULD, "Invalid frontmatter", $file,
-                    "YAML frontmatter must be closed with ---");
-            } else {
+                $this->addIssue(
+                    self::SHOULD,
+                    'Invalid frontmatter',
+                    $file,
+                    'YAML frontmatter must be closed with ---',
+                );
+            } elseif (!preg_match('/^title:/m', $content)) {
                 // Check for recommended fields
-                if (!preg_match('/^title:/m', $content)) {
-                    $this->addIssue(self::SHOULD, "Missing frontmatter", $file,
-                        "Add 'title' to YAML frontmatter per 1.3.3");
-                }
+                $this->addIssue(
+                    self::SHOULD,
+                    'Missing frontmatter',
+                    $file,
+                    "Add 'title' to YAML frontmatter per 1.3.3",
+                );
             }
-        } else {
+        } elseif (str_word_count($content) > 300 && !preg_match('/^# /', $content)) {
             // For long docs, recommend frontmatter
-            if (str_word_count($content) > 300 && !preg_match('/^# /', $content)) {
-                $this->addIssue(self::MAY, "Consider frontmatter", $file,
-                    "Add YAML frontmatter with title, description, last_reviewed per 1.3.3");
-            }
+            $this->addIssue(
+                self::MAY,
+                'Consider frontmatter',
+                $file,
+                'Add YAML frontmatter with title, description, last_reviewed per 1.3.3',
+            );
         }
     }
 
@@ -413,7 +525,9 @@ class DocStandardsChecker
             }
 
             $linkPath = preg_replace('/#.*/', '', $link);
-            if (empty($linkPath)) continue;
+            if (empty($linkPath)) {
+                continue;
+            }
 
             $dir = dirname($file);
             $targetPath = $dir === '.' ? $linkPath : $dir . '/' . $linkPath;
@@ -429,6 +543,7 @@ class DocStandardsChecker
             if (!isset($this->linkGraph[$targetPath])) {
                 $this->linkGraph[$targetPath] = ['outgoing' => [], 'incoming' => []];
             }
+
             $this->linkGraph[$targetPath]['incoming'][] = $file;
         }
     }
@@ -447,8 +562,12 @@ class DocStandardsChecker
 
             // Check if linked from any markdown file
             if (empty($incoming)) {
-                $this->addIssue(self::SHOULD, "Orphaned document", $file,
-                    "Not linked from any other Markdown file; add cross-references per 1.3.1");
+                $this->addIssue(
+                    self::SHOULD,
+                    'Orphaned document',
+                    $file,
+                    'Not linked from any other Markdown file; add cross-references per 1.3.1',
+                );
             }
         }
     }
@@ -464,27 +583,27 @@ class DocStandardsChecker
             'level' => $level,
             'category' => $category,
             'file' => $file,
-            'message' => $message
+            'message' => $message,
         ];
     }
 
     private function printReport(): void
     {
-        $mustIssues = array_filter($this->issues, fn($i) => $i['level'] === self::MUST);
-        $shouldIssues = array_filter($this->issues, fn($i) => $i['level'] === self::SHOULD);
-        $mayIssues = array_filter($this->issues, fn($i) => $i['level'] === self::MAY);
+        $mustIssues = array_filter($this->issues, fn (array $i): bool => $i['level'] === self::MUST);
+        $shouldIssues = array_filter($this->issues, fn (array $i): bool => $i['level'] === self::SHOULD);
+        $mayIssues = array_filter($this->issues, fn (array $i): bool => $i['level'] === self::MAY);
 
         echo "\n";
 
-        if (empty($this->issues)) {
+        if ($this->issues === []) {
             echo "\033[32m✓ All documentation standards met\033[0m\n";
             return;
         }
 
         // Print MUST issues (red)
-        if (!empty($mustIssues)) {
+        if ($mustIssues !== []) {
             echo "\033[31mMUST (Critical Violations): " . count($mustIssues) . "\033[0m\n";
-            echo str_repeat("-", 60) . "\n";
+            echo str_repeat('-', 60) . "\n";
             foreach ($mustIssues as $issue) {
                 echo sprintf("\033[31m[%s]\033[0m %s\n", $issue['category'], $issue['file']);
                 echo "  → {$issue['message']}\n\n";
@@ -492,9 +611,9 @@ class DocStandardsChecker
         }
 
         // Print SHOULD issues (yellow)
-        if (!empty($shouldIssues)) {
+        if ($shouldIssues !== []) {
             echo "\033[33mSHOULD (Recommendations): " . count($shouldIssues) . "\033[0m\n";
-            echo str_repeat("-", 60) . "\n";
+            echo str_repeat('-', 60) . "\n";
             foreach ($shouldIssues as $issue) {
                 echo sprintf("\033[33m[%s]\033[0m %s\n", $issue['category'], $issue['file']);
                 echo "  → {$issue['message']}\n\n";
@@ -502,9 +621,9 @@ class DocStandardsChecker
         }
 
         // Print MAY issues (cyan)
-        if (!empty($mayIssues)) {
+        if ($mayIssues !== []) {
             echo "\033[36mMAY (Suggestions): " . count($mayIssues) . "\033[0m\n";
-            echo str_repeat("-", 60) . "\n";
+            echo str_repeat('-', 60) . "\n";
             foreach ($mayIssues as $issue) {
                 echo sprintf("\033[36m[%s]\033[0m %s\n", $issue['category'], $issue['file']);
                 echo "  → {$issue['message']}\n\n";
@@ -515,15 +634,17 @@ class DocStandardsChecker
         echo "\nSummary:\n";
         echo "--------\n";
         printf("Total files scanned: %d\n", count($this->markdownFiles));
-        printf("Issues found: %d (MUST: %d, SHOULD: %d, MAY: %d)\n",
-            count($this->issues), count($mustIssues), count($shouldIssues), count($mayIssues));
-
-        // Compliance score
-        $totalChecks = count($this->markdownFiles) * 12; // Approximate checks per file
+        printf(
+            "Issues found: %d (MUST: %d, SHOULD: %d, MAY: %d)\n",
+            count($this->issues),
+            count($mustIssues),
+            count($shouldIssues),
+            count($mayIssues),
+        ); // Approximate checks per file
         $compliance = max(0, 100 - (count($mustIssues) * 5) - (count($shouldIssues) * 2));
         printf("Compliance score: %d%%\n", $compliance);
 
-        if (!empty($mustIssues)) {
+        if ($mustIssues !== []) {
             echo "\n\033[31m⚠️  SECURITY WARNING: Critical violations detected\033[0m\n";
             exit(1);
         }
