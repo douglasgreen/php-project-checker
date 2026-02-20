@@ -444,7 +444,6 @@ class PackageJsonChecker
         }
     }
 
-
     private function validateFiles(): void
     {
         $files = $this->package['files'] ?? [];
@@ -500,7 +499,6 @@ class PackageJsonChecker
         }
     }
 
-
     private function validateToolingConfigs(): void
     {
         // Check for Prettier, ESLint, Stylelint configs (already done in specific methods)
@@ -526,10 +524,12 @@ class PackageJsonChecker
     {
         foreach ($this->fileInventory as $file) {
             // Skip node_modules and hidden files
-            if (str_contains((string) $file, 'node_modules') || str_contains((string) $file, '/.')) {
+            if (str_contains((string) $file, 'node_modules')) {
                 continue;
             }
-
+            if (str_contains((string) $file, '/.')) {
+                continue;
+            }
             // Check .dist files
             if (str_ends_with((string) $file, '.dist')) {
                 $base = substr((string) $file, 0, -5);
@@ -773,8 +773,6 @@ class PackageJsonChecker
         }
     }
 
-
-
     private function validateEngines(): void
     {
         $engines = $this->package['engines'] ?? [];
@@ -862,6 +860,7 @@ class PackageJsonChecker
                 );
             }
         }
+
         $seen = [];
 
         foreach ($deps as $pkg => $ver) {
@@ -1286,8 +1285,13 @@ class PackageJsonChecker
         echo "--------\n";
         printf("Project: %s\n", $this->package['name'] ?? 'unknown');
         printf("Type: %s\n", $this->package['type'] ?? 'commonjs');
-        printf("Total issues: %d (MUST: %d, SHOULD: %d, MAY: %d)\n",
-            count($this->issues), count($mustIssues), count($shouldIssues), count($mayIssues));
+        printf(
+            "Total issues: %d (MUST: %d, SHOULD: %d, MAY: %d)\n",
+            count($this->issues),
+            count($mustIssues),
+            count($shouldIssues),
+            count($mayIssues),
+        );
 
         // Compliance score
         $totalChecks = 30; // Approximate number of validation rules

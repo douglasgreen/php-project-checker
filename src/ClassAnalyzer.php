@@ -64,7 +64,7 @@ class ClassAnalyzer
     private function getPhpFiles(): array
     {
         $files = [];
-        $command = 'git -C ' . escapeshellarg((string) $this->gitRoot) . " ls-files '*.php' 2>&1";
+        $command = 'git -C ' . escapeshellarg($this->gitRoot) . " ls-files '*.php' 2>&1";
         exec($command, $output, $returnCode);
 
         if ($returnCode !== 0) {
@@ -318,7 +318,8 @@ class ClassAnalyzer
                 if ($tokens[$j] === '{') {
                     break;
                 }
-                 // Start of body, stop looking
+
+                // Start of body, stop looking
                 continue;
             }
 
