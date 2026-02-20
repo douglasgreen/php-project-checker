@@ -527,9 +527,11 @@ class PackageJsonChecker
             if (str_contains((string) $file, 'node_modules')) {
                 continue;
             }
+
             if (str_contains((string) $file, '/.')) {
                 continue;
             }
+
             // Check .dist files
             if (str_ends_with((string) $file, '.dist')) {
                 $base = substr((string) $file, 0, -5);

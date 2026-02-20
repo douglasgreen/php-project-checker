@@ -11,8 +11,8 @@ declare(strict_types=1);
 
 namespace DouglasGreen\PHPProjectChecker;
 
-use Symfony\Component\Yaml\Yaml;
 use Exception;
+use Symfony\Component\Yaml\Yaml;
 
 class GitLabCiChecker
 {
@@ -216,9 +216,11 @@ class GitLabCiChecker
                 if (str_starts_with((string) $key, '.')) {
                     continue;
                 }
+
                 if (in_array($key, ['stages', 'variables', 'workflow', 'include', 'default'])) {
                     continue;
                 }
+
                 if (is_array($value) && (isset($value['script']) || isset($value['extends']))) {
                     $this->allJobs[$key] = [
                         'config' => $value,
@@ -626,7 +628,7 @@ class GitLabCiChecker
 
             // Check policy for pull-only jobs
             // This job updates cache, check if it should
-            if (isset($cache['policy']) && $cache['policy'] === 'push' && (str_contains($name, 'lint') || str_contains((string) $name, 'test'))) {
+            if (isset($cache['policy']) && $cache['policy'] === 'push' && (str_contains((string) $name, 'lint') || str_contains((string) $name, 'test'))) {
                 $this->addIssue(
                     self::MAY,
                     'Cache push policy',
@@ -682,7 +684,6 @@ class GitLabCiChecker
             // Check reports (8.1, 10.1)
             if (isset($artifacts['reports']) && (isset($artifacts['reports']['junit']) || isset($artifacts['reports']['coverage']))) {
                 // Good, these enable GitLab UI integration
-
             }
         }
     }
@@ -704,7 +705,7 @@ class GitLabCiChecker
                         self::MUST,
                         'Unpinned image',
                         $name . ': image',
-                        'Pin to specific version, not \'latest\' per 5.2: ' . $imageName,
+                        "Pin to specific version, not 'latest' per 5.2: " . $imageName,
                     );
                 }
 
@@ -934,7 +935,7 @@ class GitLabCiChecker
                 }
             }
 
-            if ((str_contains((string) $name, 'test') || str_contains($name, 'lint')) && (!$hasMrRule && $this->config['requiredWorkflowRules'])) {
+            if ((str_contains((string) $name, 'test') || str_contains((string) $name, 'lint')) && (!$hasMrRule && $this->config['requiredWorkflowRules'])) {
                 $this->addIssue(
                     self::MUST,
                     'Missing MR rule',
