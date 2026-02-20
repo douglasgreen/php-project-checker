@@ -784,55 +784,19 @@ class PackageJsonChecker
 
     private function validateFileLocations(): void
     {
-        $violations = [];
-
         foreach ($this->fileInventory as $file) {
-            $ext = pathinfo((string) $file, PATHINFO_EXTENSION);
-            $dirname = dirname((string) $file);
-
-            // Check shell scripts
-            if (in_array($ext, ['sh', 'bash', 'zsh']) && !str_starts_with((string) $file, 'bin/')) {
-                $violations['bin'][] = $file;
-            }
-
-            // Check styles
-            if (in_array($ext, ['css', 'scss', 'sass', 'less', 'styl']) && (!str_starts_with((string) $file, 'assets/styles/') && !str_starts_with((string) $file, 'src/styles/') && !str_contains((string) $file, 'node_modules'))) {
-                $violations['assets/styles/'][] = $file;
-            }
-
-            // Check data files
-            if (in_array($ext, ['json', 'yaml', 'yml', 'csv', 'tsv']) && (str_starts_with((string) $file, 'src/') && !str_starts_with((string) $file, 'assets/data/') && !str_starts_with((string) $file, 'config/') && $file !== 'package.json' && $file !== 'composer.json' && !str_contains((string) $file, 'node_modules'))) {
-                // Check if it's data vs config
-                if (preg_match('/(data|dataset|fixture|mock|sample)/i', (string) $file)) {
-                    $violations['assets/data/'][] = $file;
-                }
-            }
-
-            // Check images
-            if (in_array($ext, ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico']) && (!str_starts_with((string) $file, 'assets/images/') && !str_starts_with((string) $file, 'public/') && !str_starts_with((string) $file, 'static/') && !str_contains((string) $file, 'node_modules'))) {
-                $violations['assets/images/'][] = $file;
-            }
-
-            // Check JS/TS
-            if (in_array($ext, ['js', 'ts', 'mjs', 'cjs', 'jsx', 'tsx']) && (!str_starts_with((string) $file, 'assets/scripts/') && !str_starts_with((string) $file, 'src/') && !str_contains((string) $file, 'node_modules') && !str_contains((string) $file, 'dist/') && !str_contains((string) $file, 'build/'))) {
-                $violations['assets/scripts/ or src/'][] = $file;
-            }
-
-            // Check SQL
-            if ($ext === 'sql' && !str_starts_with((string) $file, 'assets/sql/')) {
-                $violations['assets/sql/'][] = $file;
-            }
-
-            // Check XML
-            if (in_array($ext, ['xml', 'xsd', 'xsl', 'xslt', 'wsdl']) && (!str_starts_with((string) $file, 'assets/xml/') && !str_starts_with((string) $file, 'config/'))) {
-                $violations['assets/xml/'][] = $file;
+            // Skip node_modules and hidden files
+            if (str_contains((string) $file, 'node_modules') || str_contains((string) $file, '/.')) {
+                continue;
             }
 
             // Check .dist files
             if (str_ends_with((string) $file, '.dist')) {
                 $base = substr((string) $file, 0, -5);
-                $allowedDist = ['.env', '.env.local', '.env.production', 'phpunit.xml',
-                               'phpcs.xml', 'ecs.php', 'phpstan.neon', 'psalm.xml'];
+                $allowedDist = [
+                    '.env', '.env.local', '.env.production', 'phpunit.xml',
+                    'phpcs.xml', 'ecs.php', 'phpstan.neon', 'psalm.xml',
+                ];
 
                 $isAllowed = false;
                 foreach ($allowedDist as $allowed) {
@@ -851,21 +815,29 @@ class PackageJsonChecker
                     );
                 }
             }
-        }
 
-        // Report violations
-        foreach ($violations as $expectedDir => $files) {
-            $fileList = implode(', ', array_slice($files, 0, 3));
-            if (count($files) > 3) {
-                $fileList .= ' and ' . (count($files) - 3) . ' more';
+            // Check each file type against expected locations
+            foreach ($this->fileTypeLocations as $expectedDir => $patterns) {
+                foreach ($patterns as $pattern) {
+                    if (fnmatch($pattern, basename((string) $file))) {
+                        if (
+                            !str_starts_with((string) $file, (string) $expectedDir) &&
+                            !str_starts_with((string) $file, 'src/' . $expectedDir) &&
+                            !str_starts_with((string) $file, 'tests/') &&
+                            !str_starts_with((string) $file, 'vendor/')
+                        ) {
+                            $this->addIssue(
+                                self::SHOULD,
+                                'File location',
+                                $file,
+                                sprintf("File should be in '%s' directory", $expectedDir),
+                            );
+                        }
+
+                        break 2;
+                    }
+                }
             }
-
-            $this->addIssue(
-                self::SHOULD,
-                'File location',
-                $fileList,
-                sprintf("Files should be in '%s' directory", $expectedDir),
-            );
         }
     }
 
@@ -1079,41 +1051,6 @@ class PackageJsonChecker
         }
     }
 
-    private function validateFileLocations(): void
-    {
-        foreach ($this->fileInventory as $file) {
-            $ext = pathinfo((string) $file, PATHINFO_EXTENSION);
-            $dirname = dirname((string) $file);
-            // Skip node_modules and hidden files
-            if (str_contains((string) $file, 'node_modules')) {
-                continue;
-            }
-            if (str_contains((string) $file, '/.')) {
-                continue;
-            }
-
-            // Check each file type
-            foreach ($this->fileTypeLocations as $expectedDir => $patterns) {
-                foreach ($patterns as $pattern) {
-                    if (fnmatch($pattern, basename((string) $file))) {
-                        if (!str_starts_with((string) $file, (string) $expectedDir) &&
-                            !str_starts_with((string) $file, 'src/' . $expectedDir) &&
-                            !str_starts_with((string) $file, 'tests/') &&
-                            !str_starts_with((string) $file, 'vendor/')) {
-                            $this->addIssue(
-                                self::SHOULD,
-                                'File location',
-                                $file,
-                                sprintf("File should be in '%s' directory", $expectedDir),
-                            );
-                        }
-
-                        break 2;
-                    }
-                }
-            }
-        }
-    }
 
     private function validateToolingConfigs(): void
     {
