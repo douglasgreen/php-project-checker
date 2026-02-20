@@ -177,6 +177,27 @@ Make sure that functions are used by running:
 function-checker.php
 ```
 
+## Class checker
+
+**Usage:**
+
+```bash
+# Check current directory
+class-checker.php
+
+# Check specific directory
+class-checker.php /path/to/project
+```
+
+**Features validated:**
+
+- **Definition Tracking**: Scans for `class`, `trait`, and `interface` definitions within the Git repository.
+- **Usage Analysis**: Tracks instantiation (`new`), `instanceof` checks, static calls (`::`), inheritance (`extends`/`implements`), and trait composition (`use`).
+- **Namespace Resolution**: Correctly resolves class names using namespace declarations and `use` statements.
+- **Unused Detection**: Identifies definitions that are declared but never referenced elsewhere in the codebase.
+- **Git Integration**: Uses `git ls-files` for fast file discovery, automatically excluding `tests/` directories.
+- **Detailed Reporting**: Shows file paths and line numbers for unused definitions, and usage counts for used definitions.
+
 ## GitLab CI checker
 
 **Usage:**
