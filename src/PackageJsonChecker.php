@@ -728,18 +728,20 @@ class PackageJsonChecker
 
             if (file_exists($configFile)) {
                 $content = file_get_contents($configFile);
-                $devDeps = array_keys($this->package['devDependencies'] ?? []);
+                if ($content !== false) {
+                    $devDeps = array_keys($this->package['devDependencies'] ?? []);
 
-                foreach ($devDeps as $pkg) {
-                    if (str_starts_with((string) $pkg, 'eslint-plugin-') || $pkg === '@eslint/js') {
-                        $shortName = str_replace('eslint-plugin-', '', (string) $pkg);
-                        if (!str_contains($content, $shortName) && !str_contains($content, (string) $pkg)) {
-                            $this->addIssue(
-                                self::SHOULD,
-                                'Unconfigured ESLint plugin',
-                                (string) $pkg,
-                                sprintf("Plugin '%s' installed but may not be imported in eslint.config.js", $pkg),
-                            );
+                    foreach ($devDeps as $pkg) {
+                        if (str_starts_with((string) $pkg, 'eslint-plugin-') || $pkg === '@eslint/js') {
+                            $shortName = str_replace('eslint-plugin-', '', (string) $pkg);
+                            if (!str_contains($content, $shortName) && !str_contains($content, (string) $pkg)) {
+                                $this->addIssue(
+                                    self::SHOULD,
+                                    'Unconfigured ESLint plugin',
+                                    (string) $pkg,
+                                    sprintf("Plugin '%s' installed but may not be imported in eslint.config.js", $pkg),
+                                );
+                            }
                         }
                     }
                 }
@@ -788,14 +790,14 @@ class PackageJsonChecker
         $devDeps = array_keys($this->package['devDependencies'] ?? []);
         foreach ($devDeps as $pkg) {
             if (str_starts_with((string) $pkg, 'stylelint-')) {
-                $shortName = str_replace('stylelint-', '', $pkg);
+                $shortName = str_replace('stylelint-', '', (string) $pkg);
                 // Check if it's a plugin (stylelint-plugin-*)
                 if (str_starts_with((string) $pkg, 'stylelint-plugin-')) {
                     if (!in_array($pkg, $plugins) && !in_array($shortName, $plugins)) {
                         $this->addIssue(
                             self::SHOULD,
                             'Unconfigured Stylelint plugin',
-                            $pkg,
+                            (string) $pkg,
                             sprintf("Plugin '%s' installed but not in stylelint config plugins", $pkg),
                         );
                     }
@@ -804,7 +806,7 @@ class PackageJsonChecker
                     $this->addIssue(
                         self::MAY,
                         'Stylelint tool check',
-                        $pkg,
+                        (string) $pkg,
                         sprintf("Verify '%s' is properly configured", $pkg),
                     );
                 }
