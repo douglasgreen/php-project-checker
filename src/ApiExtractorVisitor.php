@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace DouglasGreen\PHPProjectChecker;
 
 use DouglasGreen\PHPProjectChecker\PrettyPrinter\Standard;
-use DouglasGreen\PHPProjectChecker\Stmt\Namespace_;
-use DouglasGreen\PHPProjectChecker\Stmt\ClassLike;
-use DouglasGreen\PHPProjectChecker\Stmt\Interface_;
-use DouglasGreen\PHPProjectChecker\Stmt\Trait_;
-use DouglasGreen\PHPProjectChecker\Stmt\Enum_;
-use DouglasGreen\PHPProjectChecker\Stmt\ClassMethod;
-use DouglasGreen\PHPProjectChecker\Stmt\Function_;
 use DouglasGreen\PHPProjectChecker\Stmt\Class_;
+use DouglasGreen\PHPProjectChecker\Stmt\ClassLike;
+use DouglasGreen\PHPProjectChecker\Stmt\ClassMethod;
+use DouglasGreen\PHPProjectChecker\Stmt\Enum_;
+use DouglasGreen\PHPProjectChecker\Stmt\Function_;
+use DouglasGreen\PHPProjectChecker\Stmt\Interface_;
+use DouglasGreen\PHPProjectChecker\Stmt\Namespace_;
+use DouglasGreen\PHPProjectChecker\Stmt\Trait_;
 
 /**
  * Custom Visitor to extract API contextual structures
@@ -108,6 +108,7 @@ class ApiExtractorVisitor extends NodeVisitorAbstract
                 'attributes' => $this->formatAttributes($node->attrGroups),
             ];
         }
+
         return null;
     }
 

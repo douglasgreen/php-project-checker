@@ -78,7 +78,7 @@ if ($returnCode !== 0) {
     die("Error: This script must be run inside a valid git repository.\n");
 }
 
-$phpFiles = array_filter($files, fn(string $file) => pathinfo($file, PATHINFO_EXTENSION) === 'php' && is_file($file));
+$phpFiles = array_filter($files, fn (string $file): bool => pathinfo($file, PATHINFO_EXTENSION) === 'php' && is_file($file));
 
 // Helper function to clean and flatten DocBlocks to save AI tokens
 function cleanDocBlock($doc): string
