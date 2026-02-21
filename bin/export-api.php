@@ -43,7 +43,7 @@ if (!class_exists(\PhpParser\ParserFactory::class)) {
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
 use PhpParser\ParserFactory;
-use PhpParser\PrettyPrinter;
+use PhpParser\PrettyPrinter\Standard;
 
 $outputFile = 'chatbot_api_context.md';
 $output = "# Project Public API Context\n\n";
@@ -54,7 +54,16 @@ $output .= "This document outlines the available public APIs, classes, and metho
 // ==========================================
 $composerFile = 'composer.json';
 if (file_exists($composerFile)) {
-    $composerData = json_decode(file_get_contents($composerFile), true);
+    $composerContent = file_get_contents($composerFile);
+    if ($composerContent === false) {
+        die("Error: Could not read composer.json file.\n");
+    }
+
+    $composerData = json_decode($composerContent, true);
+    if ($composerData === null) {
+        die("Error: Could not parse composer.json file.\n");
+    }
+
     $output .= "## Composer Dependencies\n\n";
 
     $deps = $composerData['require'] ?? [];
@@ -81,7 +90,7 @@ if ($returnCode !== 0) {
 $phpFiles = array_filter($files, fn (string $file): bool => pathinfo($file, PATHINFO_EXTENSION) === 'php' && is_file($file));
 
 // Helper function to clean and flatten DocBlocks to save AI tokens
-function cleanDocBlock($doc): string
+function cleanDocBlock(?string $doc): string
 {
     if (!$doc) {
         return '';
@@ -104,15 +113,10 @@ function cleanDocBlock($doc): string
 // ==========================================
 $output .= "## Source Files API\n\n";
 
-// Compatibility for PHP-Parser v4 and v5
-$factory = new ParserFactory();
-if (method_exists($factory, 'createForNewestSupportedVersion')) {
-    $parser = $factory->createForNewestSupportedVersion();
-} else {
-    $parser = $factory->create(ParserFactory::PREFER_PHP7);
-}
+// Use PHP-Parser v5 API - static method
+$parser = ParserFactory::createForNewestSupportedVersion();
 
-$printer = new PrettyPrinter\Standard();
+$printer = new Standard();
 
 // Process Each File
 foreach ($phpFiles as $file) {

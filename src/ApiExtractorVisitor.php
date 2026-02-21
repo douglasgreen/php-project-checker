@@ -6,7 +6,16 @@ namespace DouglasGreen\PHPProjectChecker;
 
 use PhpParser\Comment\Doc;
 use PhpParser\Node;
+use PhpParser\Node\Name\Namespace_;
+use PhpParser\Node\Stmt\ClassLike;
+use PhpParser\Node\Stmt\ClassMethod;
+use PhpParser\Node\Stmt\Enum_;
+use PhpParser\Node\Stmt\Function_;
+use PhpParser\Node\Stmt\Interface_;
+use PhpParser\Node\Stmt\Trait_;
+use PhpParser\Node\Stmt\Class_;
 use PhpParser\NodeVisitorAbstract;
+use PhpParser\PrettyPrinter\Standard;
 
 /**
  * Custom Visitor to extract API contextual structures
@@ -15,8 +24,10 @@ class ApiExtractorVisitor extends NodeVisitorAbstract
 {
     public string $namespace = '';
 
+    /** @var array<string, array{type: string, signature: string, docblock: string, attributes: string, methods: array<array{signature: string, docblock: string, attributes: string}>}> */
     public array $classes = [];
 
+    /** @var array<array{signature: string, docblock: string, attributes: string}> */
     public array $functions = [];
 
     private ?string $currentClass = null;
@@ -28,7 +39,7 @@ class ApiExtractorVisitor extends NodeVisitorAbstract
         $this->printer = $printer;
     }
 
-    public function enterNode(Node $node)
+    public function enterNode(Node $node): ?Node
     {
         // Track namespace
         if ($node instanceof Namespace_) {
@@ -106,15 +117,19 @@ class ApiExtractorVisitor extends NodeVisitorAbstract
         return null;
     }
 
-    public function leaveNode(Node $node): void
+    public function leaveNode(Node $node): array|int|Node|null
     {
         if ($node instanceof ClassLike && $node->name !== null) {
             $this->currentClass = null; // Leaving class scope
         }
+
+        return null;
     }
 
     /**
      * Cleverly format PHP Attributes by leveraging the PrettyPrinter on a dummy class
+     *
+     * @param array<int, Node\Attribute> $attrGroups
      */
     private function formatAttributes(array $attrGroups): string
     {
