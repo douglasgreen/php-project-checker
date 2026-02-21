@@ -4,8 +4,7 @@
     "type": "project",
     "license": "MIT",
     "require": {
-        "php": "^8.3",
-        "nikic/php-parser": "^5.7"
+        "php": "^8.3"
     },
     "require-dev": {
         "douglasgreen/code-linter": "^0.5.2",
