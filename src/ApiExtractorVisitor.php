@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace DouglasGreen\PHPProjectChecker;
 
-use PhpParser\Node\Identifier;
 use PhpParser\Comment\Doc;
 use PhpParser\Node;
+use PhpParser\Node\Identifier;
 use PhpParser\Node\Name\Namespace_;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassLike;
@@ -33,9 +33,7 @@ class ApiExtractorVisitor extends NodeVisitorAbstract
 
     private ?string $currentClass = null;
 
-    public function __construct(private readonly Standard $printer)
-    {
-    }
+    public function __construct(private readonly Standard $printer) {}
 
     public function enterNode(Node $node): ?Node
     {
