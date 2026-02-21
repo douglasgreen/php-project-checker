@@ -393,6 +393,7 @@ class ComposerChecker
 
         $foundValid = false;
         foreach ($psr4 as $namespace => $path) {
+
             // Check if namespace matches owner
             if (!empty($this->config['owner'])) {
                 $expectedOwnerNs = $this->toStudlyCase($owner);
@@ -407,13 +408,13 @@ class ComposerChecker
             }
 
             // Check if qualified with project name (not just owner)
-            $parts = explode('\\\\', trim((string) $namespace, '\\\\'));
+            $parts = explode('\\', trim((string) $namespace, '\\'));
             if (count($parts) < 2) {
                 $this->addIssue(
                     self::MUST,
                     'Unqualified namespace',
                     'autoload.psr-4: ' . $namespace,
-                    sprintf("Namespace must be qualified with project name, not just '%s\\\\'", $parts[0]),
+                    sprintf("Namespace must be qualified with project name, not just '%s\\'", $parts[0]),
                 );
             }
 
