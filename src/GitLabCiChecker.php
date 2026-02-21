@@ -667,7 +667,7 @@ class GitLabCiChecker
             $artifacts = $job['config']['artifacts'];
 
             // Check expire_in (6.2.2)
-            if (empty($artifacts['expire_in']) && !isset($artifacts['expire_in'])) {
+            if (empty($artifacts['expire_in'])) {
                 $this->addIssue(
                     self::MUST,
                     'Missing artifact expiry',
@@ -736,7 +736,7 @@ class GitLabCiChecker
                         $composerPhp = $this->composer['require']['php'] ?? '';
                         $cleanComposerPhp = preg_replace('/[^\d.]/', '', $composerPhp);
 
-                        if (!empty($cleanComposerPhp) && version_compare($ciPhpVersion, (string) $cleanComposerPhp, '<')) {
+                        if (!empty($cleanComposerPhp) && version_compare((string) $ciPhpVersion, (string) $cleanComposerPhp, '<')) {
                             $this->addIssue(
                                 self::MUST,
                                 'PHP version mismatch',

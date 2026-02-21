@@ -106,7 +106,7 @@ class ClassAnalyzer
     }
 
     /**
-     * @param array<int, string> $files
+     * @param array<int, mixed> $files
      */
     private function scanDirectory(string $dir, array &$files): void
     {
@@ -294,11 +294,8 @@ class ClassAnalyzer
                 }
 
                 if ($t === '{') {
-                    // Start of group use. We treat the prefix as part of the name for now.
-                    // This simple parser might not fully support group use correctly,
-                    // but we'll try to capture the main class name.
                     $inGroup = true;
-                    $name = ''; // Reset name to capture inside
+                    $name = '';
                     continue;
                 }
 
@@ -308,7 +305,6 @@ class ClassAnalyzer
                 }
 
                 if ($t === ',') {
-                    // End of one item in group
                     $finalAlias = $alias ?: basename(str_replace('\\', '/', $name));
                     $this->useMap[$finalAlias] = $name;
                     $name = '';
@@ -565,6 +561,10 @@ class ClassAnalyzer
      *
      * @return array<int, mixed>|null
      */
+    /**
+     * @param array<int, array{0: int, 1: string, 2: int}|string> $tokens
+     * @return array<int, mixed>|null
+     */
     private function getPreviousNonWhitespaceToken(array $tokens, int $index): ?array
     {
         for ($i = $index - 1; $i >= 0; $i--) {
@@ -572,7 +572,7 @@ class ClassAnalyzer
                 continue;
             }
 
-            return is_array($tokens[$i]) ? $tokens[$i] : [$tokens[$i]]; // Normalize simple chars
+            return is_array($tokens[$i]) ? $tokens[$i] : [(string) $tokens[$i]];
         }
 
         return null;
@@ -583,6 +583,10 @@ class ClassAnalyzer
      *
      * @return array<int, mixed>|null
      */
+    /**
+     * @param array<int, array{0: int, 1: string, 2: int}|string> $tokens
+     * @return array<int, mixed>|null
+     */
     private function getNextNonWhitespaceToken(array $tokens, int $index, int $tokenCount): ?array
     {
         for ($i = $index + 1; $i < $tokenCount; $i++) {
@@ -590,7 +594,7 @@ class ClassAnalyzer
                 continue;
             }
 
-            return is_array($tokens[$i]) ? $tokens[$i] : [$tokens[$i]];
+            return is_array($tokens[$i]) ? $tokens[$i] : [(string) $tokens[$i]];
         }
 
         return null;

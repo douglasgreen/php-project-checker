@@ -100,7 +100,7 @@ class FunctionAnalyzer
     }
 
     /**
-     * @param array<int, string> $files
+     * @param array<int, mixed> $files
      */
     private function scanDirectory(string $dir, array &$files): void
     {
