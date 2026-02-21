@@ -8,6 +8,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use DouglasGreen\PHPProjectChecker\DocStandardsChecker;
 
 // CLI Entry point
+/** @var string $directory */
 $directory = $argv[1] ?? getcwd();
 $checker = new DocStandardsChecker($directory);
 $checker->run();

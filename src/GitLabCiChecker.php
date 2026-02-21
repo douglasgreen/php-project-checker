@@ -281,7 +281,7 @@ class GitLabCiChecker
         // Check organization by stage (1.1.4)
         $hasOrganizedIncludes = false;
         foreach (array_keys($this->includedFiles) as $path) {
-            if (preg_match('/\.gitlab\/ci\/(build|test|deploy|lint|security)\.yml$/', (string) $path)) {
+            if (preg_match('/\.gitlab\/ci\/(build|test|deploy|lint|security)\.yml$/', (string) $path) === 1) {
                 $hasOrganizedIncludes = true;
             }
         }
@@ -736,7 +736,7 @@ class GitLabCiChecker
                         $composerPhp = $this->composer['require']['php'] ?? '';
                         $cleanComposerPhp = preg_replace('/[^\d.]/', '', $composerPhp);
 
-                        if (!empty($cleanComposerPhp) && version_compare($ciPhpVersion, $cleanComposerPhp, '<')) {
+                        if (!empty($cleanComposerPhp) && version_compare($ciPhpVersion, (string) $cleanComposerPhp, '<')) {
                             $this->addIssue(
                                 self::MUST,
                                 'PHP version mismatch',

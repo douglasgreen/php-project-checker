@@ -23,19 +23,25 @@ class ComposerChecker
 
     private readonly string $rootDir;
 
+    /** @var array<string, mixed> */
     private array $config;
 
+    /** @var array<string, mixed> */
     private array $composer;
 
+    /** @var array<int, array<string, string>> */
     private array $issues = [];
 
+    /** @var array<string, mixed>|null */
     private ?array $lockData = null;
 
+    /** @var array<int, string> */
     private array $allowedTypes = [
         'library', 'project', 'composer-plugin', 'metapackage',
         'symfony-bundle', 'wordpress-plugin', 'wordpress-theme',
     ];
 
+    /** @var array<string, string> */
     private array $securityPatterns = [
         '/\brm\s+-rf\s+/' => 'Dangerous rm -rf command detected',
         '/\bsudo\b/' => 'Sudo command detected',
@@ -46,6 +52,7 @@ class ComposerChecker
         '/\brm\s+-[a-z]*f/' => 'Force remove command detected',
     ];
 
+    /** @var array<int, string> */
     private array $insecurePaths = [
         '/\.\.\//',  // Parent directory traversal
         '/\/etc\//', // System config
@@ -54,7 +61,7 @@ class ComposerChecker
 
     public function __construct(string $directory, string $configFile = '')
     {
-        $this->rootDir = realpath($directory) ?: getcwd();
+        $this->rootDir = (string) (realpath($directory) ?: getcwd());
         $this->loadComposerJson();
         $this->loadComposerLock();
         $this->loadConfig($configFile);
@@ -111,7 +118,7 @@ class ComposerChecker
             exit(1);
         }
 
-        $content = file_get_contents($path);
+        $content = (string) file_get_contents($path);
         $this->composer = json_decode($content, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
@@ -126,7 +133,7 @@ class ComposerChecker
     {
         $path = $this->rootDir . '/composer.lock';
         if (file_exists($path)) {
-            $content = file_get_contents($path);
+            $content = (string) file_get_contents($path);
             $this->lockData = json_decode($content, true);
             if (json_last_error() === JSON_ERROR_NONE) {
                 echo "Loaded composer.lock for version validation\n";
@@ -147,7 +154,7 @@ class ComposerChecker
         ];
 
         if ($configFile && file_exists($configFile)) {
-            $userConfig = json_decode(file_get_contents($configFile), true);
+            $userConfig = json_decode((string) file_get_contents($configFile), true);
             if ($userConfig === null) {
                 fwrite(STDERR, "\033[33mWarning: Invalid config JSON, using defaults\033[0m\n");
                 $this->config = $defaults;

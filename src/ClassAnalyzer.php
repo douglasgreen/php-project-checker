@@ -10,8 +10,10 @@ use RecursiveIteratorIterator;
 
 class ClassAnalyzer
 {
+    /** @var array<string, array{file: string, line: int, type: string}> */
     private array $definitions = []; // ['FQCN' => ['file' => ..., 'line' => ..., 'type' => ...]]
 
+    /** @var array<string, int> */
     private array $usages = []; // ['FQCN' => count]
 
     private readonly ?string $gitRoot;
@@ -19,9 +21,10 @@ class ClassAnalyzer
     // Context for the current file being parsed
     private string $currentNamespace = '';
 
+    /** @var array<string, string> */
     private array $useMap = []; // [Alias => FQCN]
 
-    public function __construct($gitRoot = null)
+    public function __construct(?string $gitRoot = null)
     {
         $this->gitRoot = $gitRoot ?: $this->findGitRoot();
         if (!$this->gitRoot) {
@@ -91,6 +94,9 @@ class ClassAnalyzer
         return $files;
     }
 
+    /**
+     * @param array<int, string> $files
+     */
     private function scanDirectory(string $dir, array &$files): void
     {
         $iterator = new RecursiveIteratorIterator(
@@ -109,9 +115,9 @@ class ClassAnalyzer
         }
     }
 
-    private function parseFile($file): void
+    private function parseFile(string $file): void
     {
-        $content = file_get_contents($file);
+        $content = (string) file_get_contents($file);
         $tokens = token_get_all($content);
         $tokenCount = count($tokens);
 

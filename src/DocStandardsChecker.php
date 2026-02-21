@@ -22,14 +22,19 @@ class DocStandardsChecker
 
     private readonly string $rootDir;
 
+    /** @var array<int, string> */
     private array $files = [];
 
+    /** @var array<int, string> */
     private array $markdownFiles = [];
 
+    /** @var array<int, array<string, string>> */
     private array $issues = [];
 
+    /** @var array<string, array{outgoing: array<int, string>, incoming: array<int, string>}> */
     private array $linkGraph = [];
 
+    /** @var array<string, array<string, string>> */
     private array $requiredFiles = [
         'root' => [
             'README.md' => 'Project explanation and installation guide',
@@ -45,8 +50,10 @@ class DocStandardsChecker
     ];
 
     // Patterns
+    /** @var array<int, string> */
     private array $forbiddenWords = ['simply', 'just', 'obviously', 'clearly', 'basically', 'easily'];
 
+    /** @var array<string, string> */
     private array $securityPatterns = [
         '/\b(sk-[a-zA-Z0-9]{20,})/i' => 'Exposed API key (OpenAI format)',
         '/\b(ghp_[a-zA-Z0-9]{36})/i' => 'Exposed GitHub token',
@@ -58,7 +65,7 @@ class DocStandardsChecker
 
     public function __construct(string $directory)
     {
-        $this->rootDir = realpath($directory) ?: getcwd();
+        $this->rootDir = (string) (realpath($directory) ?: getcwd());
         if (!$this->isGitRepository()) {
             fwrite(STDERR, sprintf('Error: Not a git repository: %s%s', $this->rootDir, PHP_EOL));
             exit(1);
@@ -97,7 +104,7 @@ class DocStandardsChecker
             exit(1);
         }
 
-        $this->markdownFiles = array_filter($this->files, fn (string $file): int|false => preg_match('/\.md$/i', $file));
+        $this->markdownFiles = array_filter($this->files, fn (string $file): bool => (bool) preg_match('/\.md$/i', $file));
 
         echo 'Found ' . count($this->markdownFiles) . " Markdown files\n";
     }
@@ -207,7 +214,7 @@ class DocStandardsChecker
             $fullPath = $this->rootDir . '/' . $file;
 
             // Check for UTF-8 (2.2.3)
-            $content = file_get_contents($fullPath);
+            $content = (string) file_get_contents($fullPath);
             if (!mb_check_encoding($content, 'UTF-8')) {
                 $this->addIssue(
                     self::MUST,
@@ -255,6 +262,9 @@ class DocStandardsChecker
         }
     }
 
+    /**
+     * @param array<int, string> $lines
+     */
     private function checkHeadingStructure(string $file, array $lines): void
     {
         $hasH1 = false;
@@ -342,6 +352,9 @@ class DocStandardsChecker
         }
     }
 
+    /**
+     * @param array<int, string> $lines
+     */
     private function checkWritingStyle(string $file, string $content, array $lines): void
     {
         // Check for fluff words (3.2.2)
@@ -380,6 +393,9 @@ class DocStandardsChecker
         $this->checkListPunctuation($file, $lines);
     }
 
+    /**
+     * @param array<int, string> $lines
+     */
     private function checkListPunctuation(string $file, array $lines): void
     {
         $inList = false;
@@ -574,7 +590,7 @@ class DocStandardsChecker
 
     private function getFileContent(string $file): string
     {
-        return file_get_contents($this->rootDir . '/' . $file);
+        return (string) file_get_contents($this->rootDir . '/' . $file);
     }
 
     private function addIssue(string $level, string $category, string $file, string $message): void

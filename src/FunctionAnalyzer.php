@@ -10,13 +10,15 @@ use RecursiveIteratorIterator;
 
 class FunctionAnalyzer
 {
+    /** @var array<string, array{file: string, line: int, type: string}> */
     private array $definitions = []; // ['functionName' => ['file' => ..., 'line' => ..., 'type' => ...]]
 
+    /** @var array<string, int> */
     private array $calls = []; // ['functionName' => count]
 
-    private $gitRoot;
+    private ?string $gitRoot;
 
-    public function __construct($gitRoot = null)
+    public function __construct(?string $gitRoot = null)
     {
         $this->gitRoot = $gitRoot ?: $this->findGitRoot();
         if (!$this->gitRoot) {
@@ -86,6 +88,9 @@ class FunctionAnalyzer
         return $files;
     }
 
+    /**
+     * @param array<int, string> $files
+     */
     private function scanDirectory(string $dir, array &$files): void
     {
         $iterator = new RecursiveIteratorIterator(
@@ -104,9 +109,9 @@ class FunctionAnalyzer
         }
     }
 
-    private function parseFile($file): void
+    private function parseFile(string $file): void
     {
-        $content = file_get_contents($file);
+        $content = (string) file_get_contents($file);
         $tokens = token_get_all($content);
         $tokenCount = count($tokens);
 
@@ -170,7 +175,10 @@ class FunctionAnalyzer
         }
     }
 
-    private function extractNamespace(array $tokens, int|float &$i): string
+    /**
+     * @param array<int, array{0: int, 1: string, 2: int}|string> $tokens
+     */
+    private function extractNamespace(array $tokens, int &$i): string
     {
         $namespace = '';
         $counter = count($tokens);
@@ -193,7 +201,10 @@ class FunctionAnalyzer
         return $namespace;
     }
 
-    private function extractClassName(array $tokens, float|int &$i, string $namespace)
+    /**
+     * @param array<int, array{0: int, 1: string, 2: int}|string> $tokens
+     */
+    private function extractClassName(array $tokens, int &$i, string $namespace): ?string
     {
         $counter = count($tokens);
         for ($j = $i + 1; $j < $counter; ++$j) {
@@ -205,7 +216,10 @@ class FunctionAnalyzer
         }
     }
 
-    private function extractFunctionName(array $tokens, float|int &$i)
+    /**
+     * @param array<int, array{0: int, 1: string, 2: int}|string> $tokens
+     */
+    private function extractFunctionName(array $tokens, int &$i): ?string
     {
         $counter = count($tokens);
         for ($j = $i + 1; $j < $counter; ++$j) {
@@ -227,7 +241,10 @@ class FunctionAnalyzer
         }
     }
 
-    private function extractFunctionCalls(array $tokens, float|int &$i, int $tokenCount): void
+    /**
+     * @param array<int, array{0: int, 1: string, 2: int}|string> $tokens
+     */
+    private function extractFunctionCalls(array $tokens, int &$i, int $tokenCount): void
     {
         $funcName = $tokens[$i][1];
 
@@ -248,7 +265,10 @@ class FunctionAnalyzer
         }
     }
 
-    private function extractMethodCalls(array $tokens, &$i, int $tokenCount): void
+    /**
+     * @param array<int, array{0: int, 1: string, 2: int}|string> $tokens
+     */
+    private function extractMethodCalls(array $tokens, int &$i, int $tokenCount): void
     {
         // Look ahead for the method name
         for ($j = $i + 1; $j < $tokenCount; ++$j) {
@@ -281,7 +301,7 @@ class FunctionAnalyzer
         }
     }
 
-    private function incrementCall($name): void
+    private function incrementCall(string $name): void
     {
         if (!isset($this->calls[$name])) {
             $this->calls[$name] = 0;
