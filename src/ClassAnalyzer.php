@@ -16,7 +16,7 @@ class ClassAnalyzer
     /** @var array<string, int> */
     private array $usages = []; // ['FQCN' => count]
 
-    private readonly ?string $gitRoot;
+    private readonly string $gitRoot;
 
     // Context for the current file being parsed
     private string $currentNamespace = '';
@@ -52,7 +52,7 @@ class ClassAnalyzer
         $this->printReport();
     }
 
-    private function findGitRoot(): string|false|null
+    private function findGitRoot(): ?string
     {
         $dir = getcwd();
         if ($dir === false) {
@@ -78,7 +78,6 @@ class ClassAnalyzer
      */
     private function getPhpFiles(): array
     {
-        /** @var array<int, string> $files */
         $files = [];
         $command = 'git -C ' . escapeshellarg($this->gitRoot) . " ls-files '*.php' 2>&1";
         exec($command, $output, $returnCode);
@@ -327,7 +326,7 @@ class ClassAnalyzer
         }
 
         // Register the last found name
-        if ($name !== '' && $name !== '0') {
+        if ($name !== '') {
             $finalAlias = $alias ?: basename(str_replace('\\', '/', $name));
             $this->useMap[$finalAlias] = $name;
         }
@@ -540,7 +539,7 @@ class ClassAnalyzer
 
         // Check if it's a built-in type (ignore for usage tracking or treat as root)
         // For this report, we just namespace it if we are in a namespace
-        if ($this->currentNamespace !== '' && $this->currentNamespace !== '0') {
+        if ($this->currentNamespace !== '') {
             // Check if it's already FQCN relative to namespace or imported
             // If not imported, assume it's in the current namespace
             return $this->currentNamespace . '\\' . $name;

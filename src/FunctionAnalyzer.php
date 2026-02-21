@@ -16,12 +16,12 @@ class FunctionAnalyzer
     /** @var array<string, int> */
     private array $calls = []; // ['functionName' => count]
 
-    private ?string $gitRoot;
+    private string $gitRoot;
 
     public function __construct(?string $gitRoot = null)
     {
         $root = $gitRoot ?: $this->findGitRoot();
-        if ($root === false || $root === null) {
+        if ($root === null) {
             throw new Exception('Not a git repository (or any parent up to mount point)');
         }
         $this->gitRoot = $root;
@@ -29,7 +29,7 @@ class FunctionAnalyzer
 
     public function analyze(): void
     {
-        echo "Analyzing Git repository at: " . (string) $this->gitRoot . "\n\n";
+        echo "Analyzing Git repository at: " . $this->gitRoot . "\n\n";
 
         $files = $this->getPhpFiles();
         echo 'Found ' . count($files) . " PHP files\n\n";
@@ -46,7 +46,7 @@ class FunctionAnalyzer
         $this->printReport();
     }
 
-    private function findGitRoot(): string|false|null
+    private function findGitRoot(): ?string
     {
         $dir = getcwd();
         if ($dir === false) {
@@ -72,9 +72,8 @@ class FunctionAnalyzer
      */
     private function getPhpFiles(): array
     {
-        /** @var array<int, string> $files */
         $files = [];
-        $command = 'git -C ' . escapeshellarg((string) $this->gitRoot) . " ls-files '*.php' 2>&1";
+        $command = 'git -C ' . escapeshellarg($this->gitRoot) . " ls-files '*.php' 2>&1";
         exec($command, $output, $returnCode);
 
         if ($returnCode !== 0) {
@@ -220,7 +219,7 @@ class FunctionAnalyzer
             if (is_array($tokens[$j]) && $tokens[$j][0] === T_STRING) {
                 $className = $tokens[$j][1];
 
-                return $namespace !== '' && $namespace !== '0' ? sprintf('%s\%s', $namespace, $className) : $className;
+                return $namespace !== '' ? sprintf('%s\%s', $namespace, $className) : $className;
             }
         }
 
