@@ -4,15 +4,9 @@ declare(strict_types=1);
 
 namespace DouglasGreen\PHPProjectChecker;
 
-use DouglasGreen\PHPProjectChecker\PrettyPrinter\Standard;
-use DouglasGreen\PHPProjectChecker\Stmt\Class_;
-use DouglasGreen\PHPProjectChecker\Stmt\ClassLike;
-use DouglasGreen\PHPProjectChecker\Stmt\ClassMethod;
-use DouglasGreen\PHPProjectChecker\Stmt\Enum_;
-use DouglasGreen\PHPProjectChecker\Stmt\Function_;
-use DouglasGreen\PHPProjectChecker\Stmt\Interface_;
-use DouglasGreen\PHPProjectChecker\Stmt\Namespace_;
-use DouglasGreen\PHPProjectChecker\Stmt\Trait_;
+use PhpParser\Comment\Doc;
+use PhpParser\Node;
+use PhpParser\NodeVisitorAbstract;
 
 /**
  * Custom Visitor to extract API contextual structures
@@ -68,7 +62,7 @@ class ApiExtractorVisitor extends NodeVisitorAbstract
             $this->classes[$this->currentClass] = [
                 'type' => $type,
                 'signature' => $signature,
-                'docblock' => $node->getDocComment() ? $node->getDocComment()->getText() : '',
+                'docblock' => $node->getDocComment() instanceof Doc ? $node->getDocComment()->getText() : '',
                 'attributes' => $this->formatAttributes($node->attrGroups),
                 'methods' => [],
             ];
@@ -87,7 +81,7 @@ class ApiExtractorVisitor extends NodeVisitorAbstract
             // Strip trailing semicolon
             $this->classes[$this->currentClass]['methods'][] = [
                 'signature' => $signature,
-                'docblock' => $node->getDocComment() ? $node->getDocComment()->getText() : '',
+                'docblock' => $node->getDocComment() instanceof Doc ? $node->getDocComment()->getText() : '',
                 'attributes' => $this->formatAttributes($node->attrGroups),
             ];
         }
@@ -104,7 +98,7 @@ class ApiExtractorVisitor extends NodeVisitorAbstract
 
             $this->functions[] = [
                 'signature' => $signature,
-                'docblock' => $node->getDocComment() ? $node->getDocComment()->getText() : '',
+                'docblock' => $node->getDocComment() instanceof Doc ? $node->getDocComment()->getText() : '',
                 'attributes' => $this->formatAttributes($node->attrGroups),
             ];
         }
