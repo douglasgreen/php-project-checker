@@ -16,7 +16,7 @@ class FunctionAnalyzer
     /** @var array<string, int> */
     private array $calls = []; // ['functionName' => count]
 
-    private string $gitRoot;
+    private readonly string $gitRoot;
 
     public function __construct(?string $gitRoot = null)
     {
@@ -24,12 +24,13 @@ class FunctionAnalyzer
         if ($root === null) {
             throw new Exception('Not a git repository (or any parent up to mount point)');
         }
+
         $this->gitRoot = $root;
     }
 
     public function analyze(): void
     {
-        echo "Analyzing Git repository at: " . $this->gitRoot . "\n\n";
+        echo 'Analyzing Git repository at: ' . $this->gitRoot . "\n\n";
 
         $files = $this->getPhpFiles();
         echo 'Found ' . count($files) . " PHP files\n\n";
@@ -52,6 +53,7 @@ class FunctionAnalyzer
         if ($dir === false) {
             return null;
         }
+
         while ($dir !== '/') {
             if (is_dir($dir . '/.git')) {
                 return $dir;
@@ -61,6 +63,7 @@ class FunctionAnalyzer
             if ($parent === $dir) {
                 break;
             }
+
             $dir = $parent;
         }
 

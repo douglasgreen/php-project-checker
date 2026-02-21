@@ -27,9 +27,10 @@ class ClassAnalyzer
     public function __construct(?string $gitRoot = null)
     {
         $root = $gitRoot ?: $this->findGitRoot();
-        if ($root === false || $root === null) {
+        if ($root === null) {
             throw new Exception('Not a git repository (or any parent up to mount point)');
         }
+
         $this->gitRoot = $root;
     }
 
@@ -58,6 +59,7 @@ class ClassAnalyzer
         if ($dir === false) {
             return null;
         }
+
         while ($dir !== '/') {
             if (is_dir($dir . '/.git')) {
                 return $dir;
@@ -67,6 +69,7 @@ class ClassAnalyzer
             if ($parent === $dir) {
                 break;
             }
+
             $dir = $parent;
         }
 
@@ -559,6 +562,7 @@ class ClassAnalyzer
 
     /**
      * @param array<int, array{0: int, 1: string, 2: int}|string> $tokens
+     *
      * @return array<int, mixed>|null
      */
     private function getPreviousNonWhitespaceToken(array $tokens, int $index): ?array
@@ -576,6 +580,7 @@ class ClassAnalyzer
 
     /**
      * @param array<int, array{0: int, 1: string, 2: int}|string> $tokens
+     *
      * @return array<int, mixed>|null
      */
     private function getNextNonWhitespaceToken(array $tokens, int $index, int $tokenCount): ?array
