@@ -393,7 +393,6 @@ class ComposerChecker
 
         $foundValid = false;
         foreach ($psr4 as $namespace => $path) {
-
             // Check if namespace matches owner
             if (!empty($this->config['owner'])) {
                 $expectedOwnerNs = $this->toStudlyCase($owner);

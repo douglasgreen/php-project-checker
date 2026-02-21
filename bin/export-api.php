@@ -20,7 +20,7 @@ use DouglasGreen\PHPProjectChecker\ApiExtractorVisitor;
 $autoloadPaths = [
     __DIR__ . '/vendor/autoload.php',
     __DIR__ . '/../vendor/autoload.php',
-    getcwd() . '/vendor/autoload.php'
+    getcwd() . '/vendor/autoload.php',
 ];
 
 $autoloaderFound = false;
@@ -40,13 +40,10 @@ if (!class_exists(\PhpParser\ParserFactory::class)) {
     die("Error: nikic/php-parser is required. Please run 'composer require --dev nikic/php-parser'.\n");
 }
 
-use PhpParser\Node;
-use PhpParser\Node\Stmt;
 use PhpParser\NodeTraverser;
-use PhpParser\NodeVisitorAbstract;
+use PhpParser\NodeVisitor\NameResolver;
 use PhpParser\ParserFactory;
 use PhpParser\PrettyPrinter;
-use PhpParser\NodeVisitor\NameResolver;
 
 $outputFile = 'chatbot_api_context.md';
 $output = "# Project Public API Context\n\n";
@@ -64,7 +61,7 @@ if (file_exists($composerFile)) {
 
     if (!empty($deps)) {
         foreach ($deps as $pkg => $version) {
-            $output .= "- `$pkg`: `$version`\n";
+            $output .= "- `{$pkg}`: `{$version}`\n";
         }
     } else {
         $output .= "*No dependencies found.*\n";
@@ -81,14 +78,15 @@ if ($returnCode !== 0) {
     die("Error: This script must be run inside a valid git repository.\n");
 }
 
-$phpFiles = array_filter($files, function($file) {
-    return pathinfo($file, PATHINFO_EXTENSION) === 'php' && is_file($file);
-});
+$phpFiles = array_filter($files, fn(string $file) => pathinfo($file, PATHINFO_EXTENSION) === 'php' && is_file($file));
 
 // Helper function to clean and flatten DocBlocks to save AI tokens
-function cleanDocBlock($doc) {
-    if (!$doc) return '';
-    $lines = explode("\n", $doc);
+function cleanDocBlock($doc): string
+{
+    if (!$doc) {
+        return '';
+    }
+    $lines = explode("\n", (string) $doc);
     $cleaned = [];
     foreach ($lines as $line) {
         $line = trim($line);
@@ -123,7 +121,7 @@ foreach ($phpFiles as $file) {
     try {
         $stmts = $parser->parse($code);
     } catch (PhpParser\Error $e) {
-        echo "Parse error in $file: {$e->getMessage()}\n";
+        echo sprintf('Parse error in %s: %s%s', $file, $e->getMessage(), PHP_EOL);
         continue; // Skip file and continue gracefully
     }
 
@@ -140,10 +138,10 @@ foreach ($phpFiles as $file) {
 
     $traverser->traverse($stmts);
 
-    if (!empty($visitor->classes) || !empty($visitor->functions)) {
-        $fileOutput = "";
+    if ($visitor->classes !== [] || $visitor->functions !== []) {
+        $fileOutput = '';
 
-        if ($visitor->namespace) {
+        if ($visitor->namespace !== '' && $visitor->namespace !== '0') {
             $fileOutput .= "**Namespace**: `{$visitor->namespace}`\n\n";
         }
 
@@ -178,7 +176,7 @@ foreach ($phpFiles as $file) {
             }
         }
 
-        if (!empty($visitor->functions)) {
+        if ($visitor->functions !== []) {
             $fileOutput .= "**Public Functions:**\n\n";
             foreach ($visitor->functions as $func) {
                 $fileOutput .= "- `{$func['signature']}`\n";
@@ -202,4 +200,4 @@ foreach ($phpFiles as $file) {
 }
 
 file_put_contents($outputFile, $output);
-echo "Successfully extracted API documentation to {$outputFile}\n";
+echo sprintf('Successfully extracted API documentation to %s%s', $outputFile, PHP_EOL);
