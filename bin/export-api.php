@@ -187,12 +187,12 @@ class ApiExtractorVisitor extends NodeVisitorAbstract {
         // Handle Standalone Public Functions
         if ($node instanceof Stmt\Function_) {
             $cleanNode = clone $node;
-            $cleanNode->stmts = null;
+            $cleanNode->stmts = []; // Fix: Use empty array instead of null for PHP-Parser v5 compatibility
             $cleanNode->setAttribute('comments', []);
             $cleanNode->attrGroups = [];
 
             $signature = $this->printer->prettyPrint([$cleanNode]);
-            $signature = trim(rtrim($signature, ';'));
+            $signature = trim(preg_replace('/\{\s*\}\s*$/', '', $signature)); // Strip trailing empty braces
 
             $this->functions[] = [
                 'signature' => $signature,
