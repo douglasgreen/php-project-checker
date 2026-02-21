@@ -65,7 +65,7 @@ function cleanDocBlock($doc) {
 }
 
 // ==========================================
-// 3. Parse PHP Files
+// 3. Parse PHP Files using Tokenizer
 // ==========================================
 $output .= "## Source Files API\n\n";
 
@@ -74,60 +74,337 @@ foreach ($phpFiles as $file) {
     $fileOutput = "";
     $hasApi = false;
 
-    // Extract Namespace
+    // Extract Namespace using regex (simple and reliable)
     $namespace = '';
     if (preg_match('/namespace\s+([^;{\s]+)/', $code, $nsMatch)) {
         $namespace = $nsMatch[1];
         $fileOutput .= "**Namespace**: `{$namespace}`\n\n";
     }
 
-    // Extract Structs (Class, Interface, Trait, Enum)
-    // Grabs DocBlocks, Attributes, Modifiers, Type, Name, and any Extends/Implements text up to the opening bracket '{'
-    $structRegex = '/(?:(?P<doc>\/\*\*[\s\S]*?\*\/)\s+)?(?:(?P<attr>#\[[\s\S]*?\])\s+)?(?P<mod>(?:abstract\s+|final\s+|readonly\s+)*)(?P<type>class|interface|trait|enum)\s+(?P<name>[a-zA-Z0-9_]+)(?P<extends>[^{]*)/';
+    // Use PHP tokenizer to properly parse the file
+    $tokens = token_get_all($code);
+    $tokenCount = count($tokens);
 
-    if (preg_match_all($structRegex, $code, $structMatches, PREG_SET_ORDER)) {
-        foreach ($structMatches as $match) {
+    $i = 0;
+    while ($i < $tokenCount) {
+        $token = $tokens[$i];
+
+        // Skip non-array tokens (single character tokens like '{', '}', etc.)
+        if (is_array($token) === false) {
+            $i++;
+            continue;
+        }
+
+        $tokenType = $token[0];
+        $tokenContent = $token[1];
+        $tokenLine = $token[2];
+
+        // Look for class, interface, trait, or enum keywords
+        if (in_array($tokenType, [T_CLASS, T_INTERFACE, T_TRAIT, T_ENUM], true)) {
             $hasApi = true;
-            $type = ucfirst($match['type']);
-            $name = trim($match['name']);
-            $mod = trim($match['mod']);
-            $extends = trim(preg_replace('/\s+/', ' ', $match['extends']));
 
-            $fileOutput .= "#### {$type}: `{$mod} {$name} {$extends}`\n";
+            // Determine the type
+            $type = match ($tokenType) {
+                T_CLASS => 'Class',
+                T_INTERFACE => 'Interface',
+                T_TRAIT => 'Trait',
+                T_ENUM => 'Enum',
+                default => 'Class',
+            };
 
-            if (!empty($match['attr'])) {
-                $attr = trim(preg_replace('/\s+/', ' ', $match['attr']));
-                $fileOutput .= "> **Attributes:** `{$attr}`\n";
+            // Look backwards for docblock, attributes, and modifiers
+            $docBlock = '';
+            $attributes = '';
+            $modifiers = '';
+
+            $j = $i - 1;
+            while ($j >= 0) {
+                $prevToken = $tokens[$j];
+
+                // Skip non-array tokens
+                if (is_array($prevToken) === false) {
+                    // Skip whitespace and single-char tokens
+                    if (is_string($prevToken) && trim($prevToken) === '') {
+                        $j--;
+                        continue;
+                    }
+                    $j--;
+                    continue;
+                }
+
+                $prevType = $prevToken[0];
+
+                // Check for docblock
+                if ($prevType === T_DOC_COMMENT) {
+                    $docBlock = cleanDocBlock($prevToken[1]);
+                    $j--;
+                    continue;
+                }
+
+                // Check for attribute (PHP 8+)
+                if ($prevType === T_ATTRIBUTE) {
+                    // Collect all attributes going backwards
+                    $attrParts = [];
+                    $k = $j;
+                    while ($k >= 0) {
+                        $attrToken = $tokens[$k];
+                        if (is_array($attrToken)) {
+                            if ($attrToken[0] === T_ATTRIBUTE) {
+                                $attrParts[] = $attrToken[1];
+                            }
+                        } elseif (is_string($attrToken) && $attrToken === ',') {
+                            $attrParts[] = ',';
+                        } elseif (is_string($attrToken) && trim($attrToken) === '') {
+                            // skip
+                        } else {
+                            break;
+                        }
+                        $k--;
+                    }
+                    if (!empty($attrParts)) {
+                        $attributes = implode(' ', array_reverse($attrParts));
+                    }
+                    $j = $k;
+                    continue;
+                }
+
+                // Check for modifiers (abstract, final, readonly)
+                if (in_array($prevType, [T_ABSTRACT, T_FINAL, T_READONLY], true)) {
+                    $modifiers = $prevToken[1] . ' ' . $modifiers;
+                    $j--;
+                    continue;
+                }
+
+                // Check for visibility (public, private, protected) - though not typical before class
+                if (in_array($prevType, [T_PUBLIC, T_PROTECTED, T_PRIVATE, T_STATIC], true)) {
+                    $modifiers = $prevToken[1] . ' ' . $modifiers;
+                    $j--;
+                    continue;
+                }
+
+                // Stop when we hit something else
+                break;
             }
-            if (!empty($match['doc'])) {
-                $doc = cleanDocBlock($match['doc']);
-                $fileOutput .= "> **Docs:** `{$doc}`\n";
+
+            // Look forwards for the class name and extends/implements
+            $name = '';
+            $extends = '';
+
+            $k = $i + 1;
+            while ($k < $tokenCount) {
+                $nextToken = $tokens[$k];
+
+                // Skip non-array tokens
+                if (is_array($nextToken) === false) {
+                    if (is_string($nextToken)) {
+                        // If we hit '{', we've gone past the declaration line
+                        if ($nextToken === '{') {
+                            break;
+                        }
+                        // Collect extends/implements text
+                        if (in_array($nextToken, ['extends', 'implements', ':', ','], true)) {
+                            $extends .= ' ' . $nextToken;
+                        }
+                    }
+                    $k++;
+                    continue;
+                }
+
+                $nextType = $nextToken[0];
+
+                // The next string token after 'class' should be the name
+                if ($nextType === T_STRING) {
+                    if ($name === '') {
+                        $name = $nextToken[1];
+                    } else {
+                        // This is part of extends/implements
+                        $extends .= ' ' . $nextToken[1];
+                    }
+                } elseif (in_array($nextType, [T_EXTENDS, T_IMPLEMENTS], true)) {
+                    $extends .= ' ' . $nextToken[1];
+                } elseif ($nextType === T_NS_SEPARATOR) {
+                    $extends .= '\\';
+                } elseif ($nextType === T_NAME_QUALIFIED || $nextType === T_NAME_FULLY_QUALIFIED) {
+                    $extends .= ' ' . $nextToken[1];
+                }
+
+                $k++;
+            }
+
+            // Clean up extends
+            $extends = trim(preg_replace('/\s+/', ' ', $extends));
+
+            // Output the struct info
+            $fileOutput .= "#### {$type}: `{$modifiers}{$name} {$extends}`\n";
+
+            if (!empty($attributes)) {
+                $fileOutput .= "> **Attributes:** `{$attributes}`\n";
+            }
+            if (!empty($docBlock)) {
+                $fileOutput .= "> **Docs:** `{$docBlock}`\n";
             }
             $fileOutput .= "\n";
         }
+
+        $i++;
     }
 
-    // Extract Public Methods
-    // Grabs Docblocks, Attributes, looks for the word "public", and grabs the signature up to the opening bracket '{' or semicolon ';'
-    $methodRegex = '/(?:(?P<doc>\/\*\*[\s\S]*?\*\/)\s+)?(?:(?P<attr>#\[[\s\S]*?\])\s+)?(?P<mod>(?:(?:public|static|final|abstract)\s+)*public(?:\s+(?:static|final|abstract))*\s+)function\s+(?P<name>[a-zA-Z0-9_]+)\s*(?P<sig>[^;{]+)/';
+    // Extract Public Methods using tokenizer
+    $i = 0;
+    $foundMethods = [];
+    while ($i < $tokenCount) {
+        $token = $tokens[$i];
 
-    if (preg_match_all($methodRegex, $code, $methodMatches, PREG_SET_ORDER)) {
+        if (is_array($token) === false) {
+            $i++;
+            continue;
+        }
+
+        // Look for function keyword
+        if ($token[0] === T_FUNCTION) {
+            // Look backwards for docblock, attributes, and visibility/static
+            $docBlock = '';
+            $attributes = '';
+            $modifiers = '';
+
+            $j = $i - 1;
+            while ($j >= 0) {
+                $prevToken = $tokens[$j];
+
+                if (is_array($prevToken) === false) {
+                    if (is_string($prevToken) && trim($prevToken) === '') {
+                        $j--;
+                        continue;
+                    }
+                    $j--;
+                    continue;
+                }
+
+                $prevType = $prevToken[0];
+
+                // Check for docblock
+                if ($prevType === T_DOC_COMMENT) {
+                    $docBlock = cleanDocBlock($prevToken[1]);
+                    $j--;
+                    continue;
+                }
+
+                // Check for attribute
+                if ($prevType === T_ATTRIBUTE) {
+                    $attrParts = [];
+                    $k = $j;
+                    while ($k >= 0) {
+                        $attrToken = $tokens[$k];
+                        if (is_array($attrToken)) {
+                            if ($attrToken[0] === T_ATTRIBUTE) {
+                                $attrParts[] = $attrToken[1];
+                            }
+                        } elseif (is_string($attrToken) && $attrToken === ',') {
+                            $attrParts[] = ',';
+                        } elseif (is_string($attrToken) && trim($attrToken) === '') {
+                            // skip
+                        } else {
+                            break;
+                        }
+                        $k--;
+                    }
+                    if (!empty($attrParts)) {
+                        $attributes = implode(' ', array_reverse($attrParts));
+                    }
+                    $j = $k;
+                    continue;
+                }
+
+                // Check for modifiers
+                if (in_array($prevType, [T_PUBLIC, T_PROTECTED, T_PRIVATE, T_STATIC, T_ABSTRACT, T_FINAL], true)) {
+                    $modifiers = $prevToken[1] . ' ' . $modifiers;
+                    $j--;
+                    continue;
+                }
+
+                // Stop when we hit something else
+                break;
+            }
+
+            // Look forwards for the function name and signature
+            $funcName = '';
+            $signature = '';
+
+            $k = $i + 1;
+            while ($k < $tokenCount) {
+                $nextToken = $tokens[$k];
+
+                if (is_array($nextToken) === false) {
+                    if (is_string($nextToken)) {
+                        if ($nextToken === '(') {
+                            // Start collecting signature
+                            $sigStart = $k;
+                            $braceCount = 1;
+                            $sigK = $k + 1;
+                            while ($sigK < $tokenCount && $braceCount > 0) {
+                                $sigToken = $tokens[$sigK];
+                                if (is_string($sigToken)) {
+                                    if ($sigToken === '(') {
+                                        $braceCount++;
+                                    } elseif ($sigToken === ')') {
+                                        $braceCount--;
+                                        if ($braceCount === 0) {
+                                            // Get everything from '(' to ')'
+                                            for ($s = $sigStart; $s <= $sigK; $s++) {
+                                                $signature .= is_array($tokens[$s]) ? $tokens[$s][1] : $tokens[$s];
+                                            }
+                                            break;
+                                        }
+                                    }
+                                }
+                                $sigK++;
+                            }
+                            $k = $sigK;
+                            continue;
+                        } elseif ($nextToken === '{' || $nextToken === ';') {
+                            break;
+                        }
+                    }
+                    $k++;
+                    continue;
+                }
+
+                $nextType = $nextToken[0];
+
+                if ($nextType === T_STRING && $funcName === '') {
+                    $funcName = $nextToken[1];
+                }
+
+                $k++;
+            }
+
+            // Only include public methods
+            if (str_contains($modifiers, 'public') || $modifiers === '') {
+                $foundMethods[] = [
+                    'name' => $funcName,
+                    'signature' => $signature,
+                    'modifiers' => trim($modifiers),
+                    'attributes' => $attributes,
+                    'docblock' => $docBlock,
+                ];
+            }
+        }
+
+        $i++;
+    }
+
+    if (!empty($foundMethods)) {
         $hasApi = true;
         $fileOutput .= "**Public Methods:**\n\n";
-        foreach ($methodMatches as $match) {
-            $mod = trim(preg_replace('/\s+/', ' ', $match['mod']));
-            $name = trim($match['name']);
-            $sig = trim(preg_replace('/\s+/', ' ', $match['sig']));
+        foreach ($foundMethods as $method) {
+            $mod = $method['modifiers'] ?: 'public';
+            $fileOutput .= "- `{$mod} function {$method['name']}{$method['signature']}`\n";
 
-            $fileOutput .= "- `{$mod} function {$name}{$sig}`\n";
-
-            if (!empty($match['attr'])) {
-                $attr = trim(preg_replace('/\s+/', ' ', $match['attr']));
-                $fileOutput .= "  - *Attributes:* `{$attr}`\n";
+            if (!empty($method['attributes'])) {
+                $fileOutput .= "  - *Attributes:* `{$method['attributes']}`\n";
             }
-            if (!empty($match['doc'])) {
-                $doc = cleanDocBlock($match['doc']);
-                $fileOutput .= "  - *Docs:* `{$doc}`\n";
+            if (!empty($method['docblock'])) {
+                $fileOutput .= "  - *Docs:* `{$method['docblock']}`\n";
             }
         }
         $fileOutput .= "\n";
