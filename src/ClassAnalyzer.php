@@ -316,7 +316,6 @@ class ClassAnalyzer
             }
 
             if ($t[0] === T_STRING || $t[0] === T_NS_SEPARATOR) {
-                /** @var array{0: int, 1: string, 2: int} $t */
                 $name .= $t[1];
             } elseif ($t[0] === T_AS) {
                 $alias = ''; // Prepare to capture alias
@@ -569,11 +568,12 @@ class ClassAnalyzer
     private function getPreviousNonWhitespaceToken(array $tokens, int $index): ?array
     {
         for ($i = $index - 1; $i >= 0; $i--) {
-            if (is_array($tokens[$i]) && $tokens[$i][0] === T_WHITESPACE) {
+            $token = $tokens[$i];
+            if (is_array($token) && $token[0] === T_WHITESPACE) {
                 continue;
             }
 
-            return is_array($tokens[$i]) ? $tokens[$i] : [$tokens[$i]];
+            return is_array($token) ? $token : [$token];
         }
 
         return null;
