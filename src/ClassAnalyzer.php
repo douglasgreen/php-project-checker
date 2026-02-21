@@ -316,6 +316,7 @@ class ClassAnalyzer
             }
 
             if ($t[0] === T_STRING || $t[0] === T_NS_SEPARATOR) {
+                /** @var array{0: int, 1: string, 2: int} $t */
                 $name .= $t[1];
             } elseif ($t[0] === T_AS) {
                 $alias = ''; // Prepare to capture alias
