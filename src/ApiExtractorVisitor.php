@@ -4,16 +4,17 @@ declare(strict_types=1);
 
 namespace DouglasGreen\PHPProjectChecker;
 
+use PhpParser\Node\Identifier;
 use PhpParser\Comment\Doc;
 use PhpParser\Node;
 use PhpParser\Node\Name\Namespace_;
+use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Enum_;
 use PhpParser\Node\Stmt\Function_;
 use PhpParser\Node\Stmt\Interface_;
 use PhpParser\Node\Stmt\Trait_;
-use PhpParser\Node\Stmt\Class_;
 use PhpParser\NodeVisitorAbstract;
 use PhpParser\PrettyPrinter\Standard;
 
@@ -32,11 +33,8 @@ class ApiExtractorVisitor extends NodeVisitorAbstract
 
     private ?string $currentClass = null;
 
-    private readonly Standard $printer;
-
-    public function __construct(Standard $printer)
+    public function __construct(private readonly Standard $printer)
     {
-        $this->printer = $printer;
     }
 
     public function enterNode(Node $node): ?Node
@@ -48,7 +46,7 @@ class ApiExtractorVisitor extends NodeVisitorAbstract
 
         // Handle Classes, Interfaces, Traits, Enums
         if ($node instanceof ClassLike) {
-            if ($node->name === null) {
+            if (!$node->name instanceof Identifier) {
                 return null;
             } // Skip anonymous classes
 
@@ -68,7 +66,7 @@ class ApiExtractorVisitor extends NodeVisitorAbstract
             $cleanNode->attrGroups = [];
 
             $signature = $this->printer->prettyPrint([$cleanNode]);
-            $signature = trim(preg_replace('/\{\s*\}\s*$/', '', $signature)); // Strip trailing empty braces
+            $signature = trim((string) preg_replace('/\{\s*\}\s*$/', '', $signature)); // Strip trailing empty braces
 
             $this->classes[$this->currentClass] = [
                 'type' => $type,
@@ -105,7 +103,7 @@ class ApiExtractorVisitor extends NodeVisitorAbstract
             $cleanNode->attrGroups = [];
 
             $signature = $this->printer->prettyPrint([$cleanNode]);
-            $signature = trim(preg_replace('/\{\s*\}\s*$/', '', $signature)); // Strip trailing empty braces
+            $signature = trim((string) preg_replace('/\{\s*\}\s*$/', '', $signature)); // Strip trailing empty braces
 
             $this->functions[] = [
                 'signature' => $signature,
@@ -119,7 +117,7 @@ class ApiExtractorVisitor extends NodeVisitorAbstract
 
     public function leaveNode(Node $node): array|int|Node|null
     {
-        if ($node instanceof ClassLike && $node->name !== null) {
+        if ($node instanceof ClassLike && $node->name instanceof Identifier) {
             $this->currentClass = null; // Leaving class scope
         }
 

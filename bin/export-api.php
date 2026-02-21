@@ -95,7 +95,7 @@ function cleanDocBlock(?string $doc): string
     if (!$doc) {
         return '';
     }
-    $lines = explode("\n", (string) $doc);
+    $lines = explode("\n", $doc);
     $cleaned = [];
     foreach ($lines as $line) {
         $line = trim($line);
@@ -114,7 +114,7 @@ function cleanDocBlock(?string $doc): string
 $output .= "## Source Files API\n\n";
 
 // Use PHP-Parser v5 API - static method
-$parser = ParserFactory::createForNewestSupportedVersion();
+$parser = (new ParserFactory())->createForNewestSupportedVersion();
 
 $printer = new Standard();
 
