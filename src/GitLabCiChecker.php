@@ -457,7 +457,7 @@ class GitLabCiChecker
             // Check interruptible (5.4, 5.5)
             $isDeployment = str_contains((string) $name, 'deploy') || str_contains((string) $name, 'prod');
             if ($isDeployment) {
-                if (!empty($job['config']['interruptible']) && $job['config']['interruptible'] !== false) {
+                if (!empty($job['config']['interruptible'])) {
                     $this->addIssue(
                         self::MUST,
                         'Unsafe interruptible',
