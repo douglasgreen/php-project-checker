@@ -7,13 +7,14 @@ namespace DouglasGreen\PHPProjectChecker;
 use PhpParser\Comment\Doc;
 use PhpParser\Node;
 use PhpParser\Node\Identifier;
-use PhpParser\Node\Name\Namespace_;
+use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Enum_;
 use PhpParser\Node\Stmt\Function_;
 use PhpParser\Node\Stmt\Interface_;
+use PhpParser\Node\Stmt\Namespace_ as NamespaceStmt;
 use PhpParser\Node\Stmt\Trait_;
 use PhpParser\NodeVisitorAbstract;
 use PhpParser\PrettyPrinter\Standard;
@@ -38,8 +39,8 @@ class ApiExtractorVisitor extends NodeVisitorAbstract
     public function enterNode(Node $node): ?Node
     {
         // Track namespace
-        if ($node instanceof Namespace_) {
-            $this->namespace = $node->name ? $node->name->toString() : '';
+        if ($node instanceof NamespaceStmt) {
+            $this->namespace = $node->name instanceof FullyQualified ? $node->name->toString() : '';
         }
 
         // Handle Classes, Interfaces, Traits, Enums
@@ -125,7 +126,7 @@ class ApiExtractorVisitor extends NodeVisitorAbstract
     /**
      * Cleverly format PHP Attributes by leveraging the PrettyPrinter on a dummy class
      *
-     * @param array<int, Node\Attribute> $attrGroups
+     * @param array<int, Node\AttributeGroup> $attrGroups
      */
     private function formatAttributes(array $attrGroups): string
     {

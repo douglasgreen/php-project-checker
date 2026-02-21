@@ -122,6 +122,11 @@ $printer = new Standard();
 foreach ($phpFiles as $file) {
     $code = file_get_contents($file);
 
+    if ($code === false) {
+        echo sprintf('Could not read file: %s%s', $file, PHP_EOL);
+        continue;
+    }
+
     try {
         $stmts = $parser->parse($code);
     } catch (PhpParser\Error $e) {
