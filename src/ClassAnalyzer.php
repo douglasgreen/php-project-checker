@@ -316,9 +316,13 @@ class ClassAnalyzer
             }
 
             if ($t[0] === T_STRING || $t[0] === T_NS_SEPARATOR) {
-                $name .= $t[1];
+                if ($alias !== '' || (isset($tokens[$j - 1]) && is_array($tokens[$j - 1]) && $tokens[$j - 1][0] === T_AS)) {
+                    $alias = $t[1];
+                } else {
+                    $name .= $t[1];
+                }
             } elseif ($t[0] === T_AS) {
-                $alias = ''; // Prepare to capture alias
+                continue;
             } elseif ($t[0] === T_WHITESPACE) {
                 continue;
             }
