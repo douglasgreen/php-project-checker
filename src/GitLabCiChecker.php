@@ -25,22 +25,46 @@ class GitLabCiChecker
 
     private readonly string $rootDir;
 
+    /**
+     * @var array<string, mixed>
+     */
     private array $config;
 
+    /**
+     * @var array<string, mixed>
+     */
     private array $ciConfig = [];
 
+    /**
+     * @var array<string, mixed>
+     */
     private array $includedFiles = [];
 
+    /**
+     * @var array<string, array{config: array<string, mixed>, source: string}>
+     */
     private array $allJobs = [];
 
+    /**
+     * @var array<int, array<string, string>>
+     */
     private array $issues = [];
 
+    /**
+     * @var array<string, mixed>|null
+     */
     private ?array $composer = null;
 
     private string $primaryFile = ''; // Minimum recommended
 
+    /**
+     * @var array<int, string>
+     */
     private array $deprecatedComposerFlags = ['--no-suggest'];
 
+    /**
+     * @var array<string, string>
+     */
     private array $securityPatterns = [
         '/\b(password|token|secret|key)\s*[=:]\s*["\'][^"\']+["\']/i' => 'Hardcoded secret',
         '/\b(AKIA[0-9A-Z]{16})/' => 'AWS Access Key ID',
@@ -51,7 +75,7 @@ class GitLabCiChecker
 
     public function __construct(string $directory, string $configFile = '')
     {
-        $this->rootDir = realpath($directory) ?: getcwd();
+        $this->rootDir = (string) (realpath($directory) ?: getcwd());
         $this->loadConfig($configFile);
         $this->loadComposerJson();
         $this->loadCiConfiguration();
@@ -94,9 +118,10 @@ class GitLabCiChecker
             'requireInterruptible' => true,
         ];
 
-        if ($configFile && file_exists($configFile)) {
-            $userConfig = json_decode(file_get_contents($configFile), true);
-            if ($userConfig === null) {
+        if ($configFile !== '' && file_exists($configFile)) {
+            $content = file_get_contents($configFile);
+            $userConfig = json_decode((string) $content, true);
+            if (!is_array($userConfig)) {
                 fwrite(STDERR, "\033[33mWarning: Invalid config JSON, using defaults\033[0m\n");
                 $this->config = $defaults;
             } else {
@@ -113,8 +138,9 @@ class GitLabCiChecker
         $path = $this->rootDir . '/composer.json';
         if (file_exists($path)) {
             $content = file_get_contents($path);
-            $this->composer = json_decode($content, true);
-            if (json_last_error() === JSON_ERROR_NONE) {
+            $decoded = json_decode((string) $content, true);
+            if (is_array($decoded)) {
+                $this->composer = $decoded;
                 echo "Loaded composer.json for PHP version validation\n";
             }
         }
@@ -131,12 +157,14 @@ class GitLabCiChecker
 
         // Parse primary file
         $content = file_get_contents($this->primaryFile);
-        $this->ciConfig = $this->parseYaml($content);
+        $parsed = $this->parseYaml((string) $content);
 
-        if ($this->ciConfig === null) {
+        if (!is_array($parsed)) {
             fwrite(STDERR, "\033[31mError: Failed to parse .gitlab-ci.yml\033[0m\n");
             exit(1);
         }
+
+        $this->ciConfig = $parsed;
 
         echo "Loaded .gitlab-ci.yml\n";
 
@@ -147,11 +175,14 @@ class GitLabCiChecker
         $this->collectJobs();
     }
 
+    /**
+     * @return array<string, mixed>|null
+     */
     private function parseYaml(string $content): ?array
     {
         if (function_exists('yaml_parse')) {
             $result = yaml_parse($content);
-            return $result !== false ? $result : null;
+            return is_array($result) ? $result : null;
         }
 
         // Fallback to Symfony YAML if available
@@ -168,6 +199,9 @@ class GitLabCiChecker
         return null;
     }
 
+    /**
+     * @param array<string, mixed> $config
+     */
     private function loadIncludedFiles(array $config, string $basePath): void
     {
         if (!isset($config['include'])) {
@@ -195,8 +229,8 @@ class GitLabCiChecker
         $fullPath = $basePath . '/' . $path;
         if (file_exists($fullPath)) {
             $content = file_get_contents($fullPath);
-            $parsed = $this->parseYaml($content);
-            if ($parsed !== null) {
+            $parsed = $this->parseYaml((string) $content);
+            if (is_array($parsed)) {
                 $this->includedFiles[$path] = $parsed;
                 echo sprintf('Loaded included file: %s%s', $path, PHP_EOL);
 
@@ -280,10 +314,10 @@ class GitLabCiChecker
 
     private function validateYamlSyntax(): void
     {
-        $content = file_get_contents($this->primaryFile);
+        $content = (string) file_get_contents($this->primaryFile);
 
         // Check 2-space indentation (2.1)
-        if (preg_match('/^\t+/m', $content)) {
+        if (preg_match('/^\t+/m', $content) === 1) {
             $this->addIssue(
                 self::MUST,
                 'Tab indentation',
@@ -306,8 +340,8 @@ class GitLabCiChecker
         }
 
         // Check for block scalars usage (2.3)
-        $hasBlockScalars = preg_match('/^\s*script:\s*\|[+-]?/m', $content);
-        if (!$hasBlockScalars && preg_match('/script:\s*\["[^"]{100,}"\]/', $content)) {
+        $hasBlockScalars = preg_match('/^\s*script:\s*\|[+-]?/m', $content) === 1;
+        if (!$hasBlockScalars && preg_match('/script:\s*\["[^"]{100,}"\]/', $content) === 1) {
             $this->addIssue(
                 self::SHOULD,
                 'Inline script',
@@ -388,12 +422,12 @@ class GitLabCiChecker
         }
 
         // Check for only/except usage (3.1.2, 3.1.3)
-        $content = file_get_contents($this->primaryFile);
+        $content = (string) file_get_contents($this->primaryFile);
         foreach (array_keys($this->includedFiles) as $path) {
-            $content .= "\n" . file_get_contents($this->rootDir . '/' . $path);
+            $content .= "\n" . (string) file_get_contents($this->rootDir . '/' . $path);
         }
 
-        if (preg_match('/^\s*(only|except):\s*$/m', $content)) {
+        if (preg_match('/^\s*(only|except):\s*$/m', $content) === 1) {
             $this->addIssue(
                 self::MUST,
                 'Deprecated keywords',
@@ -407,7 +441,7 @@ class GitLabCiChecker
     {
         foreach ($this->allJobs as $name => $job) {
             // Check naming convention (1.3.1)
-            if (!preg_match('/^[a-z0-9]+(-[a-z0-9]+)*$/', (string) $name)) {
+            if (preg_match('/^[a-z0-9]+(-[a-z0-9]+)*$/', (string) $name) !== 1) {
                 $this->addIssue(
                     self::MUST,
                     'Invalid job name',
@@ -499,7 +533,7 @@ class GitLabCiChecker
 
             // Check for strict mode (4.1, 4.2)
             if ($this->config['requireStrictMode']) {
-                $hasStrictMode = preg_match('/set\s+(-euo\s+pipefail|-eu\s+pipefail|-euo)/', $scriptText);
+                $hasStrictMode = preg_match('/set\s+(-euo\s+pipefail|-eu\s+pipefail|-euo)/', $scriptText) === 1;
                 if (!$hasStrictMode && count($allScripts) > 1) {
                     $this->addIssue(
                         self::MUST,
@@ -521,7 +555,7 @@ class GitLabCiChecker
             }
 
             // Check for direct vendor/bin commands (user requirement)
-            if (preg_match('/\.\/vendor\/bin\//', $scriptText)) {
+            if (preg_match('/\.\/vendor\/bin\//', $scriptText) === 1) {
                 $this->addIssue(
                     self::SHOULD,
                     'Direct vendor/bin usage',
@@ -560,7 +594,7 @@ class GitLabCiChecker
             }
 
             // Check for error handling (4.3)
-            if (!preg_match('/echo\s*>\&2/', $scriptText) && preg_match('/exit\s+1/', $scriptText)) {
+            if (preg_match('/echo\s*>\&2/', $scriptText) !== 1 && preg_match('/exit\s+1/', $scriptText) === 1) {
                 $this->addIssue(
                     self::MAY,
                     'Error messaging',
@@ -594,7 +628,7 @@ class GitLabCiChecker
             // Check cache key with lockfile (6.1.2)
             if (isset($cache['key'])) {
                 $key = $cache['key'];
-                if (is_string($key) && !preg_match('/(composer|package)-?lock|yarn\.lock|package-lock\.json/', $key)) {
+                if (is_string($key) && preg_match('/(composer|package)-?lock|yarn\.lock|package-lock\.json/', $key) !== 1) {
                     // If key doesn't reference lockfile, check if files key exists
                     if (!isset($cache['key']['files'])) {
                         $this->addIssue(
@@ -700,7 +734,7 @@ class GitLabCiChecker
 
                 $imageName = is_array($image) ? $image['name'] ?? '' : $image;
 
-                if (str_ends_with($imageName, ':latest') || !str_contains($imageName, ':')) {
+                if (str_ends_with($imageName, ':latest') || str_contains($imageName, ':') === false) {
                     $this->addIssue(
                         self::MUST,
                         'Unpinned image',
@@ -747,13 +781,13 @@ class GitLabCiChecker
         $cleanComposerPhp = preg_replace('/[^\d.]/', '', (string) $composerPhp);
 
         // Scan all YAML content for PHP version references
-        $content = file_get_contents($this->primaryFile);
+        $content = (string) file_get_contents($this->primaryFile);
         foreach (array_keys($this->includedFiles) as $path) {
-            $content .= file_get_contents($this->rootDir . '/' . $path);
+            $content .= (string) file_get_contents($this->rootDir . '/' . $path);
         }
 
         // Find PHP version references that don't match
-        if (preg_match_all('/php[:\-]?(\d+\.\d+)/i', $content, $matches, PREG_SET_ORDER)) {
+        if (preg_match_all('/php[:\-]?(\d+\.\d+)/i', $content, $matches, PREG_SET_ORDER) > 0) {
             foreach ($matches as $match) {
                 $foundVersion = $match[1];
                 if (version_compare($foundVersion, $cleanComposerPhp, '<')) {
@@ -770,14 +804,14 @@ class GitLabCiChecker
 
     private function validateSecurity(): void
     {
-        $allContent = file_get_contents($this->primaryFile);
+        $allContent = (string) file_get_contents($this->primaryFile);
         foreach (array_keys($this->includedFiles) as $path) {
-            $allContent .= file_get_contents($this->rootDir . '/' . $path);
+            $allContent .= (string) file_get_contents($this->rootDir . '/' . $path);
         }
 
         // Check for hardcoded secrets (7.1)
         foreach ($this->securityPatterns as $pattern => $desc) {
-            if (preg_match($pattern, $allContent)) {
+            if (preg_match($pattern, $allContent) === 1) {
                 $this->addIssue(
                     self::MUST,
                     'Security violation',
@@ -788,7 +822,7 @@ class GitLabCiChecker
         }
 
         // Check for echo of variables (10.5)
-        if (preg_match('/echo\s+\$[A-Z_]*(?:TOKEN|KEY|SECRET|PWD|PASS)/i', $allContent)) {
+        if (preg_match('/echo\s+\$[A-Z_]*(?:TOKEN|KEY|SECRET|PWD|PASS)/i', $allContent) === 1) {
             $this->addIssue(
                 self::MUST,
                 'Secret exposure risk',
@@ -860,7 +894,7 @@ class GitLabCiChecker
 
                 // Check for manual gate (7.7)
                 if (str_contains(strtolower((string) $name), 'prod') &&
-                    (!isset($job['config']['rules']) || !preg_match('/when:\s*manual/i', json_encode($job['config'])))) {
+                    (!isset($job['config']['rules']) || preg_match('/when:\s*manual/i', (string) json_encode($job['config'])) !== 1)) {
                     $this->addIssue(
                         self::SHOULD,
                         'Missing manual gate',
@@ -877,13 +911,13 @@ class GitLabCiChecker
         // Already checked for only/except in validateWorkflow
 
         // Check for other deprecated GitLab CI features
-        $content = file_get_contents($this->primaryFile);
+        $content = (string) file_get_contents($this->primaryFile);
         foreach (array_keys($this->includedFiles) as $path) {
-            $content .= file_get_contents($this->rootDir . '/' . $path);
+            $content .= (string) file_get_contents($this->rootDir . '/' . $path);
         }
 
         // Check for old cache syntax
-        if (preg_match('/cache:\s*key:\s*["\']?\$/', $content)) {
+        if (preg_match('/cache:\s*key:\s*["\']?\$/', $content) === 1) {
             // Key files syntax is preferred but not deprecated
         }
     }
@@ -928,6 +962,7 @@ class GitLabCiChecker
 
             // Check for MR pipeline rules (8.1)
             $hasMrRule = false;
+            /** @var array<string, mixed> $rule */
             foreach ($rules as $rule) {
                 $if = $rule['if'] ?? '';
                 if (str_contains((string) $if, 'CI_PIPELINE_SOURCE') && str_contains((string) $if, 'merge_request')) {
@@ -947,6 +982,7 @@ class GitLabCiChecker
             // Security check: production deployment restrictions (9.1, 7.6)
             if (str_contains((string) $name, 'prod') || str_contains((string) $name, 'production')) {
                 $hasBranchProtection = false;
+                /** @var array<string, mixed> $rule */
                 foreach ($rules as $rule) {
                     $if = $rule['if'] ?? '';
                     if (str_contains((string) $if, 'CI_COMMIT_BRANCH') || str_contains((string) $if, 'CI_DEFAULT_BRANCH')) {
