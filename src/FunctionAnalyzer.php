@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace DouglasGreen\PHPProjectChecker;
 
+use Exception;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+
 class FunctionAnalyzer
 {
     private array $definitions = []; // ['functionName' => ['file' => ..., 'line' => ..., 'type' => ...]]
@@ -82,7 +86,7 @@ class FunctionAnalyzer
         return $files;
     }
 
-    private function scanDirectory($dir, array &$files): void
+    private function scanDirectory(string $dir, array &$files): void
     {
         $iterator = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
