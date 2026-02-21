@@ -99,6 +99,34 @@ foreach ($phpFiles as $file) {
 
         // Look for class, interface, trait, or enum keywords ONLY (not usage)
         if (in_array($tokenType, [T_CLASS, T_INTERFACE, T_TRAIT, T_ENUM], true)) {
+            // Check if this is ::class syntax (usage) instead of a definition
+            $tempI = $i - 1;
+            $isUsage = false;
+            while ($tempI >= 0) {
+                $prevToken = $tokens[$tempI];
+                if (is_array($prevToken)) {
+                    if ($prevToken[0] === T_WHITESPACE || $prevToken[0] === T_COMMENT || $prevToken[0] === T_DOC_COMMENT) {
+                        $tempI--;
+                        continue;
+                    }
+                    if ($prevToken[0] === T_DOUBLE_COLON) {
+                        $isUsage = true;
+                    }
+                    break;
+                }
+                // Single char tokens
+                if (trim($prevToken) === '') {
+                    $tempI--;
+                    continue;
+                }
+                break;
+            }
+
+            if ($isUsage) {
+                $i++;
+                continue;
+            }
+
             $hasApi = true;
 
             // Determine the type
