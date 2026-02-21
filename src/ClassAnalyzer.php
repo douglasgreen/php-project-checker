@@ -178,7 +178,7 @@ class ClassAnalyzer
                 // Check for ::class syntax
                 if ($token[0] === T_CLASS) {
                     $prev = $this->getPreviousNonWhitespaceToken($tokens, $i);
-                    if ($prev && is_array($prev) && $prev[0] === T_DOUBLE_COLON) {
+                    if ($prev && $prev[0] === T_DOUBLE_COLON) {
                         continue;
                     }
                 }
@@ -240,7 +240,7 @@ class ClassAnalyzer
             if ($token[0] === T_STRING) {
                 $next = $this->getNextNonWhitespaceToken($tokens, $i, $tokenCount);
                 // Check it's not self, static, parent
-                if ($next && is_array($next) && $next[0] === T_DOUBLE_COLON && !in_array($token[1], ['self', 'static', 'parent'])) {
+                if ($next && $next[0] === T_DOUBLE_COLON && !in_array($token[1], ['self', 'static', 'parent'])) {
                     $this->incrementUsage($this->resolveName($token[1]));
                 }
             }
@@ -574,7 +574,7 @@ class ClassAnalyzer
                 continue;
             }
 
-            return is_array($token) ? $token : [$token];
+            return is_array($token) ? $token : null;
         }
 
         return null;
@@ -597,7 +597,7 @@ class ClassAnalyzer
                 continue;
             }
 
-            return is_array($tokens[$i]) ? $tokens[$i] : [$tokens[$i]];
+            return is_array($tokens[$i]) ? $tokens[$i] : null;
         }
 
         return null;

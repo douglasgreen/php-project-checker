@@ -878,7 +878,7 @@ class GitLabCiChecker
 
                 // Check for manual gate (7.7)
                 if (str_contains(strtolower((string) $name), 'prod') &&
-                    (!isset($job['config']['rules']) || preg_match('/when:\s*manual/i', (string) json_encode($job['config'])) !== 1)) {
+                    (!isset($job['config']['rules']) || !preg_match('/when:\s*manual/i', (string) json_encode($job['config'])))) {
                     $this->addIssue(
                         self::SHOULD,
                         'Missing manual gate',
