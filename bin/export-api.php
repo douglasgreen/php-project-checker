@@ -20,10 +20,7 @@ if (file_exists($composerFile)) {
     $composerData = json_decode(file_get_contents($composerFile), true);
     $output .= "## Composer Dependencies\n\n";
 
-    $deps = array_merge(
-        $composerData['require'] ?? [],
-        $composerData['require-dev'] ?? []
-    );
+    $deps = $composerData['require'] ?? [];
 
     if (!empty($deps)) {
         foreach ($deps as $pkg => $version) {
