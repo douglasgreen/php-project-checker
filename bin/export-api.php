@@ -4,9 +4,45 @@
 /**
  * PHP Public API Extractor for Chatbot Context
  *
- * Extracts namespaces, classes, interfaces, traits, enums, public methods,
+ * Extracts namespaces, classes, interfaces, traits, enums, public methods/functions,
  * attributes, and docblocks from tracked PHP files and outputs Markdown.
+ *
+ * Uses nikic/php-parser for robust AST-based parsing.
  */
+
+// ==========================================
+// 0. Bootstrap & Setup
+// ==========================================
+$autoloadPaths = [
+    __DIR__ . '/vendor/autoload.php',
+    __DIR__ . '/../vendor/autoload.php',
+    getcwd() . '/vendor/autoload.php'
+];
+
+$autoloaderFound = false;
+foreach ($autoloadPaths as $path) {
+    if (file_exists($path)) {
+        require_once $path;
+        $autoloaderFound = true;
+        break;
+    }
+}
+
+if (!$autoloaderFound) {
+    die("Error: vendor/autoload.php not found. Please run 'composer install'.\n");
+}
+
+if (!class_exists(\PhpParser\ParserFactory::class)) {
+    die("Error: nikic/php-parser is required. Please run 'composer require --dev nikic/php-parser'.\n");
+}
+
+use PhpParser\Node;
+use PhpParser\Node\Stmt;
+use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitorAbstract;
+use PhpParser\ParserFactory;
+use PhpParser\PrettyPrinter;
+use PhpParser\NodeVisitor\NameResolver;
 
 $outputFile = 'chatbot_api_context.md';
 $output = "# Project Public API Context\n\n";
@@ -47,11 +83,11 @@ $phpFiles = array_filter($files, function($file) {
 
 // Helper function to clean and flatten DocBlocks to save AI tokens
 function cleanDocBlock($doc) {
+    if (!$doc) return '';
     $lines = explode("\n", $doc);
     $cleaned = [];
     foreach ($lines as $line) {
         $line = trim($line);
-        // Strip the standard comment asterisks and slashes
         $line = ltrim($line, "/* \t");
         $line = rtrim($line, "*/ \t");
         if ($line !== '') {
@@ -62,383 +98,214 @@ function cleanDocBlock($doc) {
 }
 
 // ==========================================
-// 3. Parse PHP Files using Tokenizer
+// 3. Parse PHP Files using AST
 // ==========================================
 $output .= "## Source Files API\n\n";
 
-foreach ($phpFiles as $file) {
-    $code = file_get_contents($file);
-    $fileOutput = "";
-    $hasApi = false;
+// Compatibility for PHP-Parser v4 and v5
+$factory = new ParserFactory();
+if (method_exists($factory, 'createForNewestSupportedVersion')) {
+    $parser = $factory->createForNewestSupportedVersion();
+} else {
+    $parser = $factory->create(ParserFactory::PREFER_PHP7);
+}
 
-    // Extract Namespace using regex (simple and reliable)
-    // Must be at start of line (or after <?php) and followed by whitespace and the namespace name
-    $namespace = '';
-    if (preg_match('/^\s*namespace\s+([a-zA-Z_][a-zA-Z0-9_\\\]*)/m', $code, $nsMatch)) {
-        $namespace = $nsMatch[1];
-        $fileOutput .= "**Namespace**: `{$namespace}`\n\n";
+$printer = new PrettyPrinter\Standard();
+
+/**
+ * Custom Visitor to extract API contextual structures
+ */
+class ApiExtractorVisitor extends NodeVisitorAbstract {
+    public string $namespace = '';
+    public array $classes = [];
+    public array $functions = [];
+
+    private ?string $currentClass = null;
+    private PrettyPrinter\Standard $printer;
+
+    public function __construct(PrettyPrinter\Standard $printer) {
+        $this->printer = $printer;
     }
 
-    // Use PHP tokenizer to properly parse the file
-    $tokens = token_get_all($code);
-    $tokenCount = count($tokens);
-
-    $i = 0;
-    while ($i < $tokenCount) {
-        $token = $tokens[$i];
-
-        // Skip non-array tokens (single character tokens like '{', '}', etc.)
-        if (is_array($token) === false) {
-            $i++;
-            continue;
+    public function enterNode(Node $node) {
+        // Track namespace
+        if ($node instanceof Stmt\Namespace_) {
+            $this->namespace = $node->name ? $node->name->toString() : '';
         }
 
-        $tokenType = $token[0];
-        $tokenContent = $token[1];
-        $tokenLine = $token[2];
+        // Handle Classes, Interfaces, Traits, Enums
+        if ($node instanceof Stmt\ClassLike) {
+            if ($node->name === null) return null; // Skip anonymous classes
 
-        // Look for class, interface, trait, or enum keywords ONLY (not usage)
-        if (in_array($tokenType, [T_CLASS, T_INTERFACE, T_TRAIT, T_ENUM], true)) {
-            // Check if this is ::class syntax (usage) instead of a definition
-            $tempI = $i - 1;
-            $isUsage = false;
-            while ($tempI >= 0) {
-                $prevToken = $tokens[$tempI];
-                if (is_array($prevToken)) {
-                    if ($prevToken[0] === T_WHITESPACE || $prevToken[0] === T_COMMENT || $prevToken[0] === T_DOC_COMMENT) {
-                        $tempI--;
-                        continue;
-                    }
-                    if ($prevToken[0] === T_DOUBLE_COLON) {
-                        $isUsage = true;
-                    }
-                    break;
-                }
-                // Single char tokens
-                if (trim($prevToken) === '') {
-                    $tempI--;
-                    continue;
-                }
-                break;
-            }
+            $this->currentClass = $node->name->toString();
 
-            if ($isUsage) {
-                $i++;
-                continue;
-            }
-
-            $hasApi = true;
-
-            // Determine the type
-            $type = match ($tokenType) {
-                T_CLASS => 'Class',
-                T_INTERFACE => 'Interface',
-                T_TRAIT => 'Trait',
-                T_ENUM => 'Enum',
+            $type = match(true) {
+                $node instanceof Stmt\Interface_ => 'Interface',
+                $node instanceof Stmt\Trait_ => 'Trait',
+                $node instanceof Stmt\Enum_ => 'Enum',
                 default => 'Class',
             };
 
-            // Look backwards for docblock, attributes, and modifiers
-            $docBlock = '';
-            $attributes = '';
-            $modifiers = '';
+            // Clone node to safely strip its contents before pretty-printing the signature
+            $cleanNode = clone $node;
+            $cleanNode->stmts = []; // Remove internal statements (methods/properties)
+            $cleanNode->setAttribute('comments', []);
+            $cleanNode->attrGroups = [];
 
-            $j = $i - 1;
-            while ($j >= 0) {
-                $prevToken = $tokens[$j];
+            $signature = $this->printer->prettyPrint([$cleanNode]);
+            $signature = trim(preg_replace('/\{\s*\}\s*$/', '', $signature)); // Strip trailing empty braces
 
-                // Skip non-array tokens
-                if (is_array($prevToken) === false) {
-                    // Skip whitespace and single-char tokens
-                    if (is_string($prevToken) && trim($prevToken) === '') {
-                        $j--;
-                        continue;
-                    }
-                    $j--;
-                    continue;
-                }
+            $this->classes[$this->currentClass] = [
+                'type' => $type,
+                'signature' => $signature,
+                'docblock' => $node->getDocComment() ? $node->getDocComment()->getText() : '',
+                'attributes' => $this->formatAttributes($node->attrGroups),
+                'methods' => []
+            ];
+        }
 
-                $prevType = $prevToken[0];
+        // Handle Public Class Methods
+        if ($node instanceof Stmt\ClassMethod && $this->currentClass) {
+            // Include public methods (or those in interfaces where visibility isn't explicitly declared)
+            if (!$node->isPrivate() && !$node->isProtected()) {
+                $cleanNode = clone $node;
+                $cleanNode->stmts = null; // Strip method body
+                $cleanNode->setAttribute('comments', []);
+                $cleanNode->attrGroups = [];
 
-                // Check for docblock
-                if ($prevType === T_DOC_COMMENT) {
-                    $docBlock = cleanDocBlock($prevToken[1]);
-                    $j--;
-                    continue;
-                }
+                $signature = $this->printer->prettyPrint([$cleanNode]);
+                $signature = trim(rtrim($signature, ';')); // Strip trailing semicolon
 
-                // Check for attribute (PHP 8+)
-                if ($prevType === T_ATTRIBUTE) {
-                    // Collect all attributes going backwards
-                    $attrParts = [];
-                    $k = $j;
-                    while ($k >= 0) {
-                        $attrToken = $tokens[$k];
-                        if (is_array($attrToken)) {
-                            if ($attrToken[0] === T_ATTRIBUTE) {
-                                $attrParts[] = $attrToken[1];
-                            }
-                        } elseif (is_string($attrToken) && $attrToken === ',') {
-                            $attrParts[] = ',';
-                        } elseif (is_string($attrToken) && trim($attrToken) === '') {
-                            // skip
-                        } else {
-                            break;
-                        }
-                        $k--;
-                    }
-                    if (!empty($attrParts)) {
-                        $attributes = implode(' ', array_reverse($attrParts));
-                    }
-                    $j = $k;
-                    continue;
-                }
+                $this->classes[$this->currentClass]['methods'][] = [
+                    'signature' => $signature,
+                    'docblock' => $node->getDocComment() ? $node->getDocComment()->getText() : '',
+                    'attributes' => $this->formatAttributes($node->attrGroups),
+                ];
+            }
+        }
 
-                // Check for modifiers (abstract, final, readonly)
-                if (in_array($prevType, [T_ABSTRACT, T_FINAL, T_READONLY], true)) {
-                    $modifiers = $prevToken[1] . ' ' . $modifiers;
-                    $j--;
-                    continue;
-                }
+        // Handle Standalone Public Functions
+        if ($node instanceof Stmt\Function_) {
+            $cleanNode = clone $node;
+            $cleanNode->stmts = null;
+            $cleanNode->setAttribute('comments', []);
+            $cleanNode->attrGroups = [];
 
-                // Check for visibility (public, private, protected) - though not typical before class
-                if (in_array($prevType, [T_PUBLIC, T_PROTECTED, T_PRIVATE, T_STATIC], true)) {
-                    $modifiers = $prevToken[1] . ' ' . $modifiers;
-                    $j--;
-                    continue;
-                }
+            $signature = $this->printer->prettyPrint([$cleanNode]);
+            $signature = trim(rtrim($signature, ';'));
 
-                // Stop when we hit something else
-                break;
+            $this->functions[] = [
+                'signature' => $signature,
+                'docblock' => $node->getDocComment() ? $node->getDocComment()->getText() : '',
+                'attributes' => $this->formatAttributes($node->attrGroups),
+            ];
+        }
+    }
+
+    public function leaveNode(Node $node) {
+        if ($node instanceof Stmt\ClassLike && $node->name !== null) {
+            $this->currentClass = null; // Leaving class scope
+        }
+    }
+
+    /**
+     * Cleverly format PHP Attributes by leveraging the PrettyPrinter on a dummy class
+     */
+    private function formatAttributes(array $attrGroups): string {
+        if (empty($attrGroups)) return '';
+        $dummy = new Stmt\Class_('Dummy', ['attrGroups' => $attrGroups]);
+        $printed = $this->printer->prettyPrint([$dummy]);
+        $lines = explode("\n", $printed);
+
+        $attrs = [];
+        foreach ($lines as $line) {
+            if (str_starts_with(trim($line), '#[')) {
+                $attrs[] = trim($line);
+            }
+        }
+        return implode(' ', $attrs);
+    }
+}
+
+// Process Each File
+foreach ($phpFiles as $file) {
+    $code = file_get_contents($file);
+
+    try {
+        $stmts = $parser->parse($code);
+    } catch (PhpParser\Error $e) {
+        echo "Parse error in $file: {$e->getMessage()}\n";
+        continue; // Skip file and continue gracefully
+    }
+
+    if ($stmts === null) {
+        continue;
+    }
+
+    $visitor = new ApiExtractorVisitor($printer);
+    $traverser = new NodeTraverser();
+
+    // NameResolver ensures types in signatures are properly mapped to Fully Qualified Class Names
+    $traverser->addVisitor(new NameResolver());
+    $traverser->addVisitor($visitor);
+
+    $traverser->traverse($stmts);
+
+    if (!empty($visitor->classes) || !empty($visitor->functions)) {
+        $fileOutput = "";
+
+        if ($visitor->namespace) {
+            $fileOutput .= "**Namespace**: `{$visitor->namespace}`\n\n";
+        }
+
+        foreach ($visitor->classes as $classData) {
+            $fileOutput .= "#### {$classData['type']}: `{$classData['signature']}`\n";
+
+            if (!empty($classData['attributes'])) {
+                $fileOutput .= "> **Attributes:** `{$classData['attributes']}`\n";
             }
 
-            // Look forwards for the class name and extends/implements
-            $name = '';
-            $extends = '';
-
-            $k = $i + 1;
-            while ($k < $tokenCount) {
-                $nextToken = $tokens[$k];
-
-                // Skip non-array tokens
-                if (is_array($nextToken) === false) {
-                    if (is_string($nextToken)) {
-                        // If we hit '{', we've gone past the declaration line
-                        if ($nextToken === '{') {
-                            break;
-                        }
-                        // Collect extends/implements text
-                        if (in_array($nextToken, ['extends', 'implements', ':', ','], true)) {
-                            $extends .= ' ' . $nextToken;
-                        }
-                    }
-                    $k++;
-                    continue;
-                }
-
-                $nextType = $nextToken[0];
-
-                // The next string token after 'class' should be the name
-                if ($nextType === T_STRING) {
-                    if ($name === '') {
-                        $name = $nextToken[1];
-                    } else {
-                        // This is part of extends/implements
-                        $extends .= ' ' . $nextToken[1];
-                    }
-                } elseif (in_array($nextType, [T_EXTENDS, T_IMPLEMENTS], true)) {
-                    $extends .= ' ' . $nextToken[1];
-                } elseif ($nextType === T_NS_SEPARATOR) {
-                    $extends .= '\\';
-                } elseif ($nextType === T_NAME_QUALIFIED || $nextType === T_NAME_FULLY_QUALIFIED) {
-                    $extends .= ' ' . $nextToken[1];
-                }
-
-                $k++;
+            $cleanDoc = cleanDocBlock($classData['docblock']);
+            if (!empty($cleanDoc)) {
+                $fileOutput .= "> **Docs:** `{$cleanDoc}`\n";
             }
+            $fileOutput .= "\n";
 
-            // Clean up extends
-            $extends = trim(preg_replace('/\s+/', ' ', $extends));
+            if (!empty($classData['methods'])) {
+                $fileOutput .= "**Public Methods:**\n\n";
+                foreach ($classData['methods'] as $method) {
+                    $fileOutput .= "- `{$method['signature']}`\n";
 
-            // Output the struct info only if we found an actual name
-            if ($name !== '') {
-                $fileOutput .= "#### {$type}: `{$modifiers}{$name} {$extends}`\n";
+                    if (!empty($method['attributes'])) {
+                        $fileOutput .= "  - *Attributes:* `{$method['attributes']}`\n";
+                    }
 
-                if (!empty($attributes)) {
-                    $fileOutput .= "> **Attributes:** `{$attributes}`\n";
-                }
-                if (!empty($docBlock)) {
-                    $fileOutput .= "> **Docs:** `{$docBlock}`\n";
+                    $cleanMethodDoc = cleanDocBlock($method['docblock']);
+                    if (!empty($cleanMethodDoc)) {
+                        $fileOutput .= "  - *Docs:* `{$cleanMethodDoc}`\n";
+                    }
                 }
                 $fileOutput .= "\n";
             }
         }
 
-        $i++;
-    }
+        if (!empty($visitor->functions)) {
+            $fileOutput .= "**Public Functions:**\n\n";
+            foreach ($visitor->functions as $func) {
+                $fileOutput .= "- `{$func['signature']}`\n";
 
-    // Extract Public Methods using tokenizer
-    $i = 0;
-    $foundMethods = [];
-    while ($i < $tokenCount) {
-        $token = $tokens[$i];
+                if (!empty($func['attributes'])) {
+                    $fileOutput .= "  - *Attributes:* `{$func['attributes']}`\n";
+                }
 
-        if (is_array($token) === false) {
-            $i++;
-            continue;
+                $cleanFuncDoc = cleanDocBlock($func['docblock']);
+                if (!empty($cleanFuncDoc)) {
+                    $fileOutput .= "  - *Docs:* `{$cleanFuncDoc}`\n";
+                }
+            }
+            $fileOutput .= "\n";
         }
 
-        // Look for function keyword
-        if ($token[0] === T_FUNCTION) {
-            // Look backwards for docblock, attributes, and visibility/static
-            $docBlock = '';
-            $attributes = '';
-            $modifiers = '';
-
-            $j = $i - 1;
-            while ($j >= 0) {
-                $prevToken = $tokens[$j];
-
-                if (is_array($prevToken) === false) {
-                    if (is_string($prevToken) && trim($prevToken) === '') {
-                        $j--;
-                        continue;
-                    }
-                    $j--;
-                    continue;
-                }
-
-                $prevType = $prevToken[0];
-
-                // Check for docblock
-                if ($prevType === T_DOC_COMMENT) {
-                    $docBlock = cleanDocBlock($prevToken[1]);
-                    $j--;
-                    continue;
-                }
-
-                // Check for attribute
-                if ($prevType === T_ATTRIBUTE) {
-                    $attrParts = [];
-                    $k = $j;
-                    while ($k >= 0) {
-                        $attrToken = $tokens[$k];
-                        if (is_array($attrToken)) {
-                            if ($attrToken[0] === T_ATTRIBUTE) {
-                                $attrParts[] = $attrToken[1];
-                            }
-                        } elseif (is_string($attrToken) && $attrToken === ',') {
-                            $attrParts[] = ',';
-                        } elseif (is_string($attrToken) && trim($attrToken) === '') {
-                            // skip
-                        } else {
-                            break;
-                        }
-                        $k--;
-                    }
-                    if (!empty($attrParts)) {
-                        $attributes = implode(' ', array_reverse($attrParts));
-                    }
-                    $j = $k;
-                    continue;
-                }
-
-                // Check for modifiers
-                if (in_array($prevType, [T_PUBLIC, T_PROTECTED, T_PRIVATE, T_STATIC, T_ABSTRACT, T_FINAL], true)) {
-                    $modifiers = $prevToken[1] . ' ' . $modifiers;
-                    $j--;
-                    continue;
-                }
-
-                // Stop when we hit something else
-                break;
-            }
-
-            // Look forwards for the function name and signature
-            $funcName = '';
-            $signature = '';
-
-            $k = $i + 1;
-            while ($k < $tokenCount) {
-                $nextToken = $tokens[$k];
-
-                if (is_array($nextToken) === false) {
-                    if (is_string($nextToken)) {
-                        if ($nextToken === '(') {
-                            // Start collecting signature
-                            $sigStart = $k;
-                            $braceCount = 1;
-                            $sigK = $k + 1;
-                            while ($sigK < $tokenCount && $braceCount > 0) {
-                                $sigToken = $tokens[$sigK];
-                                if (is_string($sigToken)) {
-                                    if ($sigToken === '(') {
-                                        $braceCount++;
-                                    } elseif ($sigToken === ')') {
-                                        $braceCount--;
-                                        if ($braceCount === 0) {
-                                            // Get everything from '(' to ')'
-                                            for ($s = $sigStart; $s <= $sigK; $s++) {
-                                                $signature .= is_array($tokens[$s]) ? $tokens[$s][1] : $tokens[$s];
-                                            }
-                                            break;
-                                        }
-                                    }
-                                }
-                                $sigK++;
-                            }
-                            $k = $sigK;
-                            continue;
-                        } elseif ($nextToken === '{' || $nextToken === ';') {
-                            break;
-                        }
-                    }
-                    $k++;
-                    continue;
-                }
-
-                $nextType = $nextToken[0];
-
-                if ($nextType === T_STRING && $funcName === '') {
-                    $funcName = $nextToken[1];
-                }
-
-                $k++;
-            }
-
-            // Only include public methods
-            if (str_contains($modifiers, 'public') || $modifiers === '') {
-                $foundMethods[] = [
-                    'name' => $funcName,
-                    'signature' => $signature,
-                    'modifiers' => trim($modifiers),
-                    'attributes' => $attributes,
-                    'docblock' => $docBlock,
-                ];
-            }
-        }
-
-        $i++;
-    }
-
-    if (!empty($foundMethods)) {
-        $hasApi = true;
-        $fileOutput .= "**Public Methods:**\n\n";
-        foreach ($foundMethods as $method) {
-            $mod = $method['modifiers'] ?: 'public';
-            $fileOutput .= "- `{$mod} function {$method['name']}{$method['signature']}`\n";
-
-            if (!empty($method['attributes'])) {
-                $fileOutput .= "  - *Attributes:* `{$method['attributes']}`\n";
-            }
-            if (!empty($method['docblock'])) {
-                $fileOutput .= "  - *Docs:* `{$method['docblock']}`\n";
-            }
-        }
-        $fileOutput .= "\n";
-    }
-
-    if ($hasApi) {
         $output .= "### File: `{$file}`\n";
         $output .= $fileOutput;
         $output .= "---\n\n";
@@ -447,5 +314,3 @@ foreach ($phpFiles as $file) {
 
 file_put_contents($outputFile, $output);
 echo "Successfully extracted API documentation to {$outputFile}\n";
-
-?>
