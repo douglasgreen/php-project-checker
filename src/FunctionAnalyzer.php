@@ -20,15 +20,16 @@ class FunctionAnalyzer
 
     public function __construct(?string $gitRoot = null)
     {
-        $this->gitRoot = $gitRoot ?: $this->findGitRoot();
-        if (!$this->gitRoot) {
+        $root = $gitRoot ?: $this->findGitRoot();
+        if ($root === false || $root === null) {
             throw new Exception('Not a git repository (or any parent up to mount point)');
         }
+        $this->gitRoot = $root;
     }
 
     public function analyze(): void
     {
-        echo "Analyzing Git repository at: {$this->gitRoot}\n\n";
+        echo "Analyzing Git repository at: " . (string) $this->gitRoot . "\n\n";
 
         $files = $this->getPhpFiles();
         echo 'Found ' . count($files) . " PHP files\n\n";
@@ -48,22 +49,30 @@ class FunctionAnalyzer
     private function findGitRoot(): string|false|null
     {
         $dir = getcwd();
+        if ($dir === false) {
+            return null;
+        }
         while ($dir !== '/') {
             if (is_dir($dir . '/.git')) {
                 return $dir;
             }
 
-            $dir = dirname($dir);
+            $parent = dirname($dir);
+            if ($parent === $dir) {
+                break;
+            }
+            $dir = $parent;
         }
 
         return null;
     }
 
     /**
-     * @return mixed[]
+     * @return array<int, string>
      */
     private function getPhpFiles(): array
     {
+        /** @var array<int, string> $files */
         $files = [];
         $command = 'git -C ' . escapeshellarg((string) $this->gitRoot) . " ls-files '*.php' 2>&1";
         exec($command, $output, $returnCode);
@@ -214,6 +223,8 @@ class FunctionAnalyzer
                 return $namespace !== '' && $namespace !== '0' ? sprintf('%s\%s', $namespace, $className) : $className;
             }
         }
+
+        return null;
     }
 
     /**
@@ -236,9 +247,11 @@ class FunctionAnalyzer
 
             // If we hit ( before finding a name, it's an anonymous function
             if ($token === '(') {
-                return;
+                return null;
             }
         }
+
+        return null;
     }
 
     /**
@@ -376,7 +389,7 @@ class FunctionAnalyzer
         echo str_repeat('-', 80) . "\n";
 
         // Sort by call count (descending)
-        usort($used, fn (array $a, array $b): float|int => $b['calls'] - $a['calls']);
+        usort($used, fn (array $a, array $b): int => $b['calls'] - $a['calls']);
 
         foreach ($used as $item) {
             $special = $item['special'] ? ' [SPECIAL/MAGIC METHOD]' : '';

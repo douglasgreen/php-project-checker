@@ -736,7 +736,7 @@ class ComposerChecker
                     }
                 }
 
-                foreach (array_keys($this->insecurePaths) as $pattern) {
+                foreach ($this->insecurePaths as $pattern) {
                     if (preg_match($pattern, $cmd)) {
                         $this->addIssue(
                             self::MUST,

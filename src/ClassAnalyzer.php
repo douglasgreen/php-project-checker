@@ -26,10 +26,11 @@ class ClassAnalyzer
 
     public function __construct(?string $gitRoot = null)
     {
-        $this->gitRoot = $gitRoot ?: $this->findGitRoot();
-        if (!$this->gitRoot) {
+        $root = $gitRoot ?: $this->findGitRoot();
+        if ($root === false || $root === null) {
             throw new Exception('Not a git repository (or any parent up to mount point)');
         }
+        $this->gitRoot = $root;
     }
 
     public function analyze(): void
@@ -54,22 +55,30 @@ class ClassAnalyzer
     private function findGitRoot(): string|false|null
     {
         $dir = getcwd();
+        if ($dir === false) {
+            return null;
+        }
         while ($dir !== '/') {
             if (is_dir($dir . '/.git')) {
                 return $dir;
             }
 
-            $dir = dirname($dir);
+            $parent = dirname($dir);
+            if ($parent === $dir) {
+                break;
+            }
+            $dir = $parent;
         }
 
         return null;
     }
 
     /**
-     * @return mixed[]
+     * @return array<int, string>
      */
     private function getPhpFiles(): array
     {
+        /** @var array<int, string> $files */
         $files = [];
         $command = 'git -C ' . escapeshellarg($this->gitRoot) . " ls-files '*.php' 2>&1";
         exec($command, $output, $returnCode);
@@ -236,6 +245,9 @@ class ClassAnalyzer
         }
     }
 
+    /**
+     * @param array<int, array{0: int, 1: string, 2: int}|string> $tokens
+     */
     private function extractNamespaceName(array $tokens, int &$i, int $tokenCount): string
     {
         $namespace = '';
@@ -258,6 +270,9 @@ class ClassAnalyzer
         return $namespace;
     }
 
+    /**
+     * @param array<int, array{0: int, 1: string, 2: int}|string> $tokens
+     */
     private function parseUseStatement(array $tokens, int &$i, int $tokenCount): void
     {
         // use A\B\C;
@@ -318,6 +333,9 @@ class ClassAnalyzer
         }
     }
 
+    /**
+     * @param array<int, array{0: int, 1: string, 2: int}|string> $tokens
+     */
     private function parseInheritance(array $tokens, int &$i, int $tokenCount): void
     {
         // class Foo extends Bar implements Baz
@@ -363,6 +381,9 @@ class ClassAnalyzer
         }
     }
 
+    /**
+     * @param array<int, array{0: int, 1: string, 2: int}|string> $tokens
+     */
     private function parseTraitUsage(array $tokens, int &$i, int $tokenCount): void
     {
         // use Trait1, Trait2;
@@ -407,6 +428,9 @@ class ClassAnalyzer
         }
     }
 
+    /**
+     * @param array<int, array{0: int, 1: string, 2: int}|string> $tokens
+     */
     private function parseNewUsage(array $tokens, int &$i, int $tokenCount): void
     {
         // new ClassName()
@@ -433,6 +457,9 @@ class ClassAnalyzer
         }
     }
 
+    /**
+     * @param array<int, array{0: int, 1: string, 2: int}|string> $tokens
+     */
     private function parseInstanceofUsage(array $tokens, int &$i, int $tokenCount): void
     {
         // instanceof ClassName
@@ -452,6 +479,9 @@ class ClassAnalyzer
         }
     }
 
+    /**
+     * @param array<int, array{0: int, 1: string, 2: int}|string> $tokens
+     */
     private function extractNameAfterKeyword(array $tokens, int &$i, int $tokenCount): ?string
     {
         for ($j = $i + 1; $j < $tokenCount; ++$j) {
@@ -474,6 +504,9 @@ class ClassAnalyzer
         return null;
     }
 
+    /**
+     * @param array<int, array{0: int, 1: string, 2: int}|string> $tokens
+     */
     private function extractNextName(array $tokens, int &$i, int $tokenCount): ?string
     {
         for ($j = $i + 1; $j < $tokenCount; ++$j) {
@@ -525,6 +558,10 @@ class ClassAnalyzer
         $this->usages[$fqcn]++;
     }
 
+    /**
+     * @param array<int, array{0: int, 1: string, 2: int}|string> $tokens
+     * @return array<int, mixed>|null
+     */
     private function getPreviousNonWhitespaceToken(array $tokens, int $index): ?array
     {
         for ($i = $index - 1; $i >= 0; $i--) {
@@ -538,6 +575,10 @@ class ClassAnalyzer
         return null;
     }
 
+    /**
+     * @param array<int, array{0: int, 1: string, 2: int}|string> $tokens
+     * @return array<int, mixed>|null
+     */
     private function getNextNonWhitespaceToken(array $tokens, int $index, int $tokenCount): ?array
     {
         for ($i = $index + 1; $i < $tokenCount; $i++) {
@@ -606,7 +647,7 @@ class ClassAnalyzer
         echo str_repeat('-', 80) . "\n";
 
         // Sort by usage count
-        usort($used, fn (array $a, array $b): int|float => $b['count'] - $a['count']);
+        usort($used, fn (array $a, array $b): int => $b['count'] - $a['count']);
 
         foreach ($used as $item) {
             echo sprintf(

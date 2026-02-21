@@ -736,7 +736,7 @@ class GitLabCiChecker
                         $composerPhp = $this->composer['require']['php'] ?? '';
                         $cleanComposerPhp = preg_replace('/[^\d.]/', '', $composerPhp);
 
-                        if (!empty($cleanComposerPhp) && version_compare($ciPhpVersion, (string) $cleanComposerPhp, '<')) {
+                        if (!empty($cleanComposerPhp) && version_compare($ciPhpVersion, $cleanComposerPhp, '<')) {
                             $this->addIssue(
                                 self::MUST,
                                 'PHP version mismatch',

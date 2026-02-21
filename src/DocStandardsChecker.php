@@ -554,7 +554,7 @@ class DocStandardsChecker
                 $targetPath .= '.md';
             }
 
-            $this->linkGraph[$file]['outgoing'][] = $targetPath;
+            $this->linkGraph[$file]['outgoing'][] = (string) $targetPath;
 
             if (!isset($this->linkGraph[$targetPath])) {
                 $this->linkGraph[$targetPath] = ['outgoing' => [], 'incoming' => []];
