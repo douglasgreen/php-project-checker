@@ -201,7 +201,7 @@ class ComposerChecker
 
         // Owner validation
         if (!empty($this->config['owner'])) {
-            $parts = explode('/', $name);
+            $parts = explode('/', (string) $name);
             if ($parts[0] !== $this->config['owner']) {
                 $this->addIssue(
                     self::MUST,

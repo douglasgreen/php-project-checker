@@ -563,6 +563,7 @@ class ClassAnalyzer
      */
     /**
      * @param array<int, array{0: int, 1: string, 2: int}|string> $tokens
+     *
      * @return array<int, mixed>|null
      */
     private function getPreviousNonWhitespaceToken(array $tokens, int $index): ?array
@@ -586,6 +587,7 @@ class ClassAnalyzer
      */
     /**
      * @param array<int, array{0: int, 1: string, 2: int}|string> $tokens
+     *
      * @return array<int, mixed>|null
      */
     private function getNextNonWhitespaceToken(array $tokens, int $index, int $tokenCount): ?array
