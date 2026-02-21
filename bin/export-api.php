@@ -72,8 +72,9 @@ foreach ($phpFiles as $file) {
     $hasApi = false;
 
     // Extract Namespace using regex (simple and reliable)
+    // Must be at start of line (or after <?php) and followed by whitespace and the namespace name
     $namespace = '';
-    if (preg_match('/namespace\s+([^;{\s]+)/', $code, $nsMatch)) {
+    if (preg_match('/^\s*namespace\s+([a-zA-Z_][a-zA-Z0-9_\\\]*)/m', $code, $nsMatch)) {
         $namespace = $nsMatch[1];
         $fileOutput .= "**Namespace**: `{$namespace}`\n\n";
     }
@@ -96,7 +97,7 @@ foreach ($phpFiles as $file) {
         $tokenContent = $token[1];
         $tokenLine = $token[2];
 
-        // Look for class, interface, trait, or enum keywords
+        // Look for class, interface, trait, or enum keywords ONLY (not usage)
         if (in_array($tokenType, [T_CLASS, T_INTERFACE, T_TRAIT, T_ENUM], true)) {
             $hasApi = true;
 
@@ -231,16 +232,18 @@ foreach ($phpFiles as $file) {
             // Clean up extends
             $extends = trim(preg_replace('/\s+/', ' ', $extends));
 
-            // Output the struct info
-            $fileOutput .= "#### {$type}: `{$modifiers}{$name} {$extends}`\n";
+            // Output the struct info only if we found an actual name
+            if ($name !== '') {
+                $fileOutput .= "#### {$type}: `{$modifiers}{$name} {$extends}`\n";
 
-            if (!empty($attributes)) {
-                $fileOutput .= "> **Attributes:** `{$attributes}`\n";
+                if (!empty($attributes)) {
+                    $fileOutput .= "> **Attributes:** `{$attributes}`\n";
+                }
+                if (!empty($docBlock)) {
+                    $fileOutput .= "> **Docs:** `{$docBlock}`\n";
+                }
+                $fileOutput .= "\n";
             }
-            if (!empty($docBlock)) {
-                $fileOutput .= "> **Docs:** `{$docBlock}`\n";
-            }
-            $fileOutput .= "\n";
         }
 
         $i++;
