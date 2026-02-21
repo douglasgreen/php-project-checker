@@ -573,7 +573,7 @@ class ClassAnalyzer
                 continue;
             }
 
-            return is_array($tokens[$i]) ? $tokens[$i] : [(string) $tokens[$i]];
+            return is_array($tokens[$i]) ? $tokens[$i] : [$tokens[$i]];
         }
 
         return null;
@@ -595,7 +595,7 @@ class ClassAnalyzer
                 continue;
             }
 
-            return is_array($tokens[$i]) ? $tokens[$i] : [(string) $tokens[$i]];
+            return is_array($tokens[$i]) ? $tokens[$i] : [$tokens[$i]];
         }
 
         return null;

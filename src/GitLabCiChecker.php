@@ -674,7 +674,7 @@ class GitLabCiChecker
                     $name . ': artifacts',
                     "Set 'expire_in' for all artifacts per 6.2.2",
                 );
-            } elseif (isset($artifacts['expire_in']) && $artifacts['expire_in'] === 'never') {
+            } elseif ($artifacts['expire_in'] === 'never') {
                 $this->addIssue(
                     self::SHOULD,
                     ' Permanent artifacts',
@@ -774,7 +774,7 @@ class GitLabCiChecker
         if (preg_match_all('/php[:\-]?(\d+\.\d+)/i', $content, $matches, PREG_SET_ORDER) > 0) {
             foreach ($matches as $match) {
                 $foundVersion = $match[1];
-                if (version_compare($foundVersion, $cleanComposerPhp, '<')) {
+                if (version_compare((string) $foundVersion, (string) $cleanComposerPhp, '<')) {
                     $this->addIssue(
                         self::MUST,
                         'PHP version outdated',
