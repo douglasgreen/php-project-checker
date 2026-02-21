@@ -223,7 +223,7 @@ class FunctionAnalyzer
         }
     }
 
-    private function extractFunctionCalls(array $tokens, &$i, int $tokenCount): void
+    private function extractFunctionCalls(array $tokens, float|int &$i, int $tokenCount): void
     {
         $funcName = $tokens[$i][1];
 

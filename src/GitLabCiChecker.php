@@ -25,46 +25,30 @@ class GitLabCiChecker
 
     private readonly string $rootDir;
 
-    /**
-     * @var array<string, mixed>
-     */
+    /** @var array<string, mixed> */
     private array $config;
 
-    /**
-     * @var array<string, mixed>
-     */
+    /** @var array<string, mixed> */
     private array $ciConfig = [];
 
-    /**
-     * @var array<string, mixed>
-     */
+    /** @var array<string, mixed> */
     private array $includedFiles = [];
 
-    /**
-     * @var array<string, array{config: array<string, mixed>, source: string}>
-     */
+    /** @var array<string, array{config: array<string, mixed>, source: string}> */
     private array $allJobs = [];
 
-    /**
-     * @var array<int, array<string, string>>
-     */
+    /** @var array<int, array<string, string>> */
     private array $issues = [];
 
-    /**
-     * @var array<string, mixed>|null
-     */
+    /** @var array<string, mixed>|null */
     private ?array $composer = null;
 
     private string $primaryFile = ''; // Minimum recommended
 
-    /**
-     * @var array<int, string>
-     */
+    /** @var array<int, string> */
     private array $deprecatedComposerFlags = ['--no-suggest'];
 
-    /**
-     * @var array<string, string>
-     */
+    /** @var array<string, string> */
     private array $securityPatterns = [
         '/\b(password|token|secret|key)\s*[=:]\s*["\'][^"\']+["\']/i' => 'Hardcoded secret',
         '/\b(AKIA[0-9A-Z]{16})/' => 'AWS Access Key ID',
@@ -424,7 +408,7 @@ class GitLabCiChecker
         // Check for only/except usage (3.1.2, 3.1.3)
         $content = (string) file_get_contents($this->primaryFile);
         foreach (array_keys($this->includedFiles) as $path) {
-            $content .= "\n" . (string) file_get_contents($this->rootDir . '/' . $path);
+            $content .= "\n" . file_get_contents($this->rootDir . '/' . $path);
         }
 
         if (preg_match('/^\s*(only|except):\s*$/m', $content) === 1) {
@@ -734,7 +718,7 @@ class GitLabCiChecker
 
                 $imageName = is_array($image) ? $image['name'] ?? '' : $image;
 
-                if (str_ends_with($imageName, ':latest') || str_contains($imageName, ':') === false) {
+                if (str_ends_with((string) $imageName, ':latest') || str_contains((string) $imageName, ':') === false) {
                     $this->addIssue(
                         self::MUST,
                         'Unpinned image',
@@ -744,7 +728,7 @@ class GitLabCiChecker
                 }
 
                 // PHP version consistency check
-                if (preg_match('/php:(\d+\.\d+)/', $imageName, $matches)) {
+                if (preg_match('/php:(\d+\.\d+)/', (string) $imageName, $matches)) {
                     $ciPhpVersion = $matches[1];
 
                     // Compare with composer.json
