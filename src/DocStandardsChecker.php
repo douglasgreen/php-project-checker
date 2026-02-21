@@ -97,7 +97,7 @@ class DocStandardsChecker
             exit(1);
         }
 
-        $this->markdownFiles = array_filter($this->files, fn(string $file) => preg_match('/\.md$/i', $file));
+        $this->markdownFiles = array_filter($this->files, fn (string $file): int|false => preg_match('/\.md$/i', $file));
 
         echo 'Found ' . count($this->markdownFiles) . " Markdown files\n";
     }

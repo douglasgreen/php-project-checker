@@ -25,41 +25,27 @@ class PackageJsonChecker
 
     private readonly string $rootDir;
 
-    /**
-     * @var array<string, mixed>
-     */
+    /** @var array<string, mixed> */
     private array $config;
 
-    /**
-     * @var array<string, mixed>
-     */
+    /** @var array<string, mixed> */
     private array $package;
 
-    /**
-     * @var array<string, mixed>|null
-     */
+    /** @var array<string, mixed>|null */
     private ?array $composer = null;
 
-    /**
-     * @var array<int, array<string, string>>
-     */
+    /** @var array<int, array<string, string>> */
     private array $issues = [];
 
-    /**
-     * @var array<int, string>
-     */
+    /** @var array<int, string> */
     private array $fileInventory = [];
 
-    /**
-     * @var array<int, string>
-     */
+    /** @var array<int, string> */
     private array $allowedTypes = [
         'module', 'commonjs', 'module-commonjs', 'esm', 'cjs',
     ];
 
-    /**
-     * @var array<string, string>
-     */
+    /** @var array<string, string> */
     private array $deprecatedConfigs = [
         '.eslintrc.js' => 'Migrate to eslint.config.js (flat config)',
         '.eslintrc.cjs' => 'Migrate to eslint.config.js (flat config)',
@@ -75,9 +61,7 @@ class PackageJsonChecker
         'tslint.json' => 'TSLint is deprecated; migrate to ESLint with @typescript-eslint',
     ];
 
-    /**
-     * @var array<string, array<int, string>>
-     */
+    /** @var array<string, array<int, string>> */
     private array $fileTypeLocations = [
         'bin/' => ['*.sh', '*.bash', '*.zsh'],
         'assets/styles/' => ['*.css', '*.scss', '*.sass', '*.less', '*.styl'],
@@ -145,6 +129,7 @@ class PackageJsonChecker
             fwrite(STDERR, "\033[31mError: Could not read package.json\033[0m\n");
             exit(1);
         }
+
         $this->package = json_decode($content, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
@@ -163,6 +148,7 @@ class PackageJsonChecker
             if ($content === false) {
                 return;
             }
+
             $this->composer = json_decode($content, true);
             if (json_last_error() === JSON_ERROR_NONE && is_array($this->composer)) {
                 echo "Loaded composer.json for cross-validation\n";
@@ -250,7 +236,7 @@ class PackageJsonChecker
             }
 
             // Extract owner from scope
-            $parts = explode('/', $name);
+            $parts = explode('/', (string) $name);
             $scope = substr($parts[0], 1); // Remove @
 
             if (!empty($this->config['owner']) && $scope !== $this->config['owner']) {
@@ -896,7 +882,7 @@ class PackageJsonChecker
                 $this->addIssue(
                     self::MUST,
                     'Wildcard dependency',
-                    (string) $pkg . ': ' . (string) $version,
+                    $pkg . ': ' . $version,
                     "Avoid '*' or 'latest'; use explicit version constraints",
                 );
             }
@@ -1090,7 +1076,7 @@ class PackageJsonChecker
         $composerName = $this->composer['name'] ?? '';
 
         // Remove npm scope for comparison
-        $pkgParts = explode('/', $pkgName);
+        $pkgParts = explode('/', (string) $pkgName);
         $pkgProject = end($pkgParts);
 
         $composerParts = explode('/', $composerName);

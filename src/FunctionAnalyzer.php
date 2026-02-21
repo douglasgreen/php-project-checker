@@ -49,6 +49,7 @@ class FunctionAnalyzer
 
             $dir = dirname($dir);
         }
+
         return null;
     }
 
@@ -200,7 +201,7 @@ class FunctionAnalyzer
         }
     }
 
-    private function extractFunctionName(array $tokens, &$i)
+    private function extractFunctionName(array $tokens, float|int &$i)
     {
         $counter = count($tokens);
         for ($j = $i + 1; $j < $counter; ++$j) {
