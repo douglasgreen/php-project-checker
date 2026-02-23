@@ -22,19 +22,19 @@ $foundPhpunitConfigs = [];
 $hasTestsDirFiles = false;
 
 $extensionCounts = [
-    'json' => 0,
-    'yaml' => 0,
-    'sh'   => 0,
-    'md'   => 0,
-    'js'   => 0,
-    'ts'   => 0,
-    'jsx'  => 0, // Added
-    'tsx'  => 0, // Added
-    'vue'  => 0, // Added
     'css'  => 0,
     'html' => 0,
-    'twig' => 0,
+    'js'   => 0,
+    'json' => 0,
+    'jsx'  => 0,
+    'md'   => 0,
+    'sh'   => 0,
     'sql'  => 0,
+    'ts'   => 0,
+    'tsx'  => 0,
+    'twig' => 0,
+    'vue'  => 0,
+    'yaml' => 0,
 ];
 
 $specificFilesToCheck = [

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "000d3219770a57c3eefcc97740bf6d78",
+    "content-hash": "ebe580674db04f0fabb0e5ba384716d4",
     "packages": [],
     "packages-dev": [
         {
@@ -295,16 +295,16 @@
         },
         {
             "name": "douglasgreen/code-linter",
-            "version": "v0.5.2",
+            "version": "v0.6.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/douglasgreen/code-linter.git",
-                "reference": "5e7bb5deb41b8a50548bc8f828e64d7c9c0a4f0e"
+                "reference": "22d9208dfaaa48697d5f5ec4bd9db04d4d0c591f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/douglasgreen/code-linter/zipball/5e7bb5deb41b8a50548bc8f828e64d7c9c0a4f0e",
-                "reference": "5e7bb5deb41b8a50548bc8f828e64d7c9c0a4f0e",
+                "url": "https://api.github.com/repos/douglasgreen/code-linter/zipball/22d9208dfaaa48697d5f5ec4bd9db04d4d0c591f",
+                "reference": "22d9208dfaaa48697d5f5ec4bd9db04d4d0c591f",
                 "shasum": ""
             },
             "require": {
@@ -353,9 +353,9 @@
             ],
             "support": {
                 "issues": "https://github.com/douglasgreen/code-linter/issues",
-                "source": "https://github.com/douglasgreen/code-linter/tree/v0.5.2"
+                "source": "https://github.com/douglasgreen/code-linter/tree/v0.6.1"
             },
-            "time": "2026-02-21T13:36:07+00:00"
+            "time": "2026-02-22T00:29:12+00:00"
         },
         {
             "name": "douglasgreen/code-metrics",
