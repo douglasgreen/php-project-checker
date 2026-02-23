@@ -23,20 +23,23 @@ $hasTestsDirFiles = false;
 
 $extensionCounts = [
     'json' => 0,
-    'yaml' => 0, // covers yml/yaml
+    'yaml' => 0,
     'sh'   => 0,
     'md'   => 0,
     'js'   => 0,
     'ts'   => 0,
+    'jsx'  => 0, // Added
+    'tsx'  => 0, // Added
+    'vue'  => 0, // Added
     'css'  => 0,
-    'html' => 0, // covers html/htm
-    'twig' => 0, // covers twig.html/html.twig
+    'html' => 0,
+    'twig' => 0,
 ];
 
 $specificFilesToCheck = [
     'AGENTS.md', 'composer.json', 'eslint.config.mjs', '.eslintignore',
     '.gitignore', '.markdownlint.json', 'package.json', '.php-cs-fixer.php',
-    'phpstan.neon.dist', 'phpunit.xml.dist', '.prettierignore',
+    'phpstan.neon.dist', 'phpunit.xml.dist', 'playwright.config.ts', '.prettierignore',
     '.prettierrc.json', 'rector.php', '.shellcheckrc', '.stylelintignore',
     '.stylelintrc.json', '.twig-cs-fixer.dist.php', '.yamllint.yml'
 ];
@@ -46,6 +49,7 @@ $specificFilesToCheck = [
  */
 $forbiddenAlternatives = [
     'eslint.config.mjs'       => ['eslint.config.js', 'eslint.config.cjs', '.eslintrc.js', '.eslintrc.json', '.eslintrc.yml', '.eslintrc'],
+    'playwright.config.ts'    => ['playwright.config.js', 'playwright.config.mjs', 'playwright.config.cjs'],
     'phpstan.neon.dist'       => ['phpstan.neon'],
     'phpunit.xml.dist'        => ['phpunit.xml', 'phpunit.dist.xml'],
     '.prettierrc.json'        => ['.prettierrc', '.prettierrc.js', '.prettierrc.cjs', '.prettierrc.yml', '.prettierrc.yaml'],
@@ -56,7 +60,7 @@ $forbiddenAlternatives = [
 ];
 
 $foundSpecificFiles = [];
-$foundForbiddenFiles = []; // Format: ['preferred_name' => ['found_bad_file1', ...]]
+$foundForbiddenFiles = [];
 
 // --- Processing ---
 
@@ -85,6 +89,9 @@ foreach ($files as $file) {
     if (preg_match('/\.md$/', $file)) $extensionCounts['md']++;
     if (preg_match('/\.js$/', $file)) $extensionCounts['js']++;
     if (preg_match('/\.ts$/', $file)) $extensionCounts['ts']++;
+    if (preg_match('/\.jsx$/', $file)) $extensionCounts['jsx']++;
+    if (preg_match('/\.tsx$/', $file)) $extensionCounts['tsx']++;
+    if (preg_match('/\.vue$/', $file)) $extensionCounts['vue']++;
     if (preg_match('/\.css$/', $file)) $extensionCounts['css']++;
     if (preg_match('/\.html?$/', $file)) $extensionCounts['html']++;
     if (preg_match('/\.twig$|twig\.html$/', $file)) $extensionCounts['twig']++;
@@ -157,3 +164,4 @@ if (!$anyForbiddenFound) {
 }
 
 echo "\nDone.\n";
+
