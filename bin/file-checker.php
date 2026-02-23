@@ -34,6 +34,7 @@ $extensionCounts = [
     'css'  => 0,
     'html' => 0,
     'twig' => 0,
+    'sql'  => 0,
 ];
 
 $specificFilesToCheck = [
@@ -95,6 +96,7 @@ foreach ($files as $file) {
     if (preg_match('/\.css$/', $file)) $extensionCounts['css']++;
     if (preg_match('/\.html?$/', $file)) $extensionCounts['html']++;
     if (preg_match('/\.twig$|twig\.html$/', $file)) $extensionCounts['twig']++;
+    if (preg_match('/\.sql$/', $file)) $extensionCounts['sql']++;
 
     if ($isTopLevel) {
         // 4. Specific Top-level files (Preferred)
