@@ -40,7 +40,23 @@ $specificFilesToCheck = [
     '.prettierrc.json', 'rector.php', '.shellcheckrc', '.stylelintignore',
     '.stylelintrc.json', '.twig-cs-fixer.dist.php', '.yamllint.yml'
 ];
+
+/**
+ * Mapping of preferred files to the alternative forms that should NOT exist.
+ */
+$forbiddenAlternatives = [
+    'eslint.config.mjs'       => ['eslint.config.js', 'eslint.config.cjs', '.eslintrc.js', '.eslintrc.json', '.eslintrc.yml', '.eslintrc'],
+    'phpstan.neon.dist'       => ['phpstan.neon'],
+    'phpunit.xml.dist'        => ['phpunit.xml', 'phpunit.dist.xml'],
+    '.prettierrc.json'        => ['.prettierrc', '.prettierrc.js', '.prettierrc.cjs', '.prettierrc.yml', '.prettierrc.yaml'],
+    '.stylelintrc.json'       => ['.stylelintrc', '.stylelintrc.js', '.stylelintrc.yml', '.stylelintrc.yaml'],
+    '.markdownlint.json'      => ['.markdownlint.yaml', '.markdownlint.yml'],
+    '.yamllint.yml'           => ['.yamllint', '.yamllint.yaml'],
+    '.twig-cs-fixer.dist.php' => ['.twig-cs-fixer.php'],
+];
+
 $foundSpecificFiles = [];
+$foundForbiddenFiles = []; // Format: ['preferred_name' => ['found_bad_file1', ...]]
 
 // --- Processing ---
 
@@ -73,9 +89,18 @@ foreach ($files as $file) {
     if (preg_match('/\.html?$/', $file)) $extensionCounts['html']++;
     if (preg_match('/\.twig$|twig\.html$/', $file)) $extensionCounts['twig']++;
 
-    // 4. Specific Top-level files
-    if ($isTopLevel && in_array($file, $specificFilesToCheck)) {
-        $foundSpecificFiles[] = $file;
+    if ($isTopLevel) {
+        // 4. Specific Top-level files (Preferred)
+        if (in_array($file, $specificFilesToCheck)) {
+            $foundSpecificFiles[] = $file;
+        }
+
+        // 5. Forbidden Alternatives
+        foreach ($forbiddenAlternatives as $preferred => $alternatives) {
+            if (in_array($file, $alternatives)) {
+                $foundForbiddenFiles[$preferred][] = $file;
+            }
+        }
     }
 }
 
@@ -109,10 +134,26 @@ foreach ($extensionCounts as $type => $count) {
 }
 
 // Requirement 4
-echo "\n4. Specific Top-level Files Status:\n";
+echo "\n4. Specific Top-level Files Status (Preferred):\n";
 foreach ($specificFilesToCheck as $target) {
     $exists = in_array($target, $foundSpecificFiles);
     printf("   - [%s] %s\n", $exists ? "X" : " ", $target);
+}
+
+// Requirement 5
+echo "\n5. Non-preferred Alternative Files (Should NOT exist):\n";
+$anyForbiddenFound = false;
+foreach ($forbiddenAlternatives as $preferred => $alternatives) {
+    if (!empty($foundForbiddenFiles[$preferred])) {
+        $anyForbiddenFound = true;
+        foreach ($foundForbiddenFiles[$preferred] as $badFile) {
+            echo "   - [!] Found: $badFile (Conflict with preferred: $preferred)\n";
+        }
+    }
+}
+
+if (!$anyForbiddenFound) {
+    echo "   - No conflicting alternative files found. Excellent.\n";
 }
 
 echo "\nDone.\n";
