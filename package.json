@@ -1,0 +1,17 @@
+{
+  "_version": "1.1.0",
+  "_modified": "2026-02-22",
+  "name": "douglasgreen/php-project-checker",
+  "version": "1.0.0",
+  "description": "Check PHP project files for conformance with requirements",
+  "type": "module",
+  "scripts": {
+    "lint": "npm run lint:mdh",
+    "lint:md": "markdownlint \"**/*.md\"",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "markdownlint-cli": "^0.47.0",
+    "prettier": "^3.8.1"
+  }
+}

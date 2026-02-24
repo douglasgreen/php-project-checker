@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ebe580674db04f0fabb0e5ba384716d4",
+    "content-hash": "49029d9b64ed681a659b006ba567a2c5",
     "packages": [],
     "packages-dev": [
         {
@@ -295,29 +295,30 @@
         },
         {
             "name": "douglasgreen/code-linter",
-            "version": "v0.6.1",
+            "version": "v0.8.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/douglasgreen/code-linter.git",
-                "reference": "22d9208dfaaa48697d5f5ec4bd9db04d4d0c591f"
+                "reference": "66a8c11b760f2f17f922aa5662d592dfe8dc7a2b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/douglasgreen/code-linter/zipball/22d9208dfaaa48697d5f5ec4bd9db04d4d0c591f",
-                "reference": "22d9208dfaaa48697d5f5ec4bd9db04d4d0c591f",
+                "url": "https://api.github.com/repos/douglasgreen/code-linter/zipball/66a8c11b760f2f17f922aa5662d592dfe8dc7a2b",
+                "reference": "66a8c11b760f2f17f922aa5662d592dfe8dc7a2b",
                 "shasum": ""
             },
             "require": {
                 "nikic/php-parser": "^5.7",
-                "php": ">=8.3"
+                "php": "^8.3"
             },
             "require-dev": {
                 "friendsofphp/php-cs-fixer": "^3.94.2",
                 "phpstan/phpstan": "^2.1.39",
-                "rector/rector": "^2.3.7"
+                "phpunit/phpunit": "^12.5.14",
+                "rector/rector": "^2.3.8"
             },
             "bin": [
-                "bin/code_linter.php"
+                "bin/code-linter"
             ],
             "type": "library",
             "autoload": {
@@ -329,46 +330,25 @@
             "license": [
                 "MIT"
             ],
-            "authors": [
-                {
-                    "name": "Douglas Green",
-                    "email": "douglas@nurd.site",
-                    "homepage": "https://nurd.site/",
-                    "role": "Developer"
-                }
-            ],
             "description": "Code linter for PHP based on Nikic parser",
-            "homepage": "https://github.com/douglasgreen/code-linter",
-            "keywords": [
-                "ast",
-                "automation",
-                "cli",
-                "code quality",
-                "coding standards",
-                "linter",
-                "linting",
-                "php",
-                "php parser",
-                "static analysis"
-            ],
             "support": {
                 "issues": "https://github.com/douglasgreen/code-linter/issues",
-                "source": "https://github.com/douglasgreen/code-linter/tree/v0.6.1"
+                "source": "https://github.com/douglasgreen/code-linter/tree/v0.8.0"
             },
-            "time": "2026-02-22T00:29:12+00:00"
+            "time": "2026-02-23T21:16:37+00:00"
         },
         {
             "name": "douglasgreen/code-metrics",
-            "version": "v0.5.1",
+            "version": "v0.6.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/douglasgreen/code-metrics.git",
-                "reference": "b9bc4b840f30e18a3976c3e1d60420835cb86f7c"
+                "reference": "bcc20cc5cfce9694933ee599dbb29a5accdddbf1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/douglasgreen/code-metrics/zipball/b9bc4b840f30e18a3976c3e1d60420835cb86f7c",
-                "reference": "b9bc4b840f30e18a3976c3e1d60420835cb86f7c",
+                "url": "https://api.github.com/repos/douglasgreen/code-metrics/zipball/bcc20cc5cfce9694933ee599dbb29a5accdddbf1",
+                "reference": "bcc20cc5cfce9694933ee599dbb29a5accdddbf1",
                 "shasum": ""
             },
             "require": {
@@ -381,7 +361,7 @@
                 "rector/rector": "^2.3.7"
             },
             "bin": [
-                "bin/code_metrics.php"
+                "bin/code-metrics"
             ],
             "type": "library",
             "autoload": {
@@ -417,9 +397,9 @@
             ],
             "support": {
                 "issues": "https://github.com/douglasgreen/code-metrics/issues",
-                "source": "https://github.com/douglasgreen/code-metrics/tree/v0.5.1"
+                "source": "https://github.com/douglasgreen/code-metrics/tree/v0.6.0"
             },
-            "time": "2026-02-20T18:10:31+00:00"
+            "time": "2026-02-23T01:15:19+00:00"
         },
         {
             "name": "evenement/evenement",
@@ -756,11 +736,11 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "2.1.39",
+            "version": "2.1.40",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/c6f73a2af4cbcd99c931d0fb8f08548cc0fa8224",
-                "reference": "c6f73a2af4cbcd99c931d0fb8f08548cc0fa8224",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/9b2c7aeb83a75d8680ea5e7c9b7fca88052b766b",
+                "reference": "9b2c7aeb83a75d8680ea5e7c9b7fca88052b766b",
                 "shasum": ""
             },
             "require": {
@@ -805,7 +785,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-02-11T14:48:56+00:00"
+            "time": "2026-02-23T15:04:35+00:00"
         },
         {
             "name": "psr/container",
@@ -1488,16 +1468,16 @@
         },
         {
             "name": "rector/rector",
-            "version": "2.3.7",
+            "version": "2.3.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/rectorphp/rector.git",
-                "reference": "9c46ad17f57963932c9788fd1b0f1d07ff450370"
+                "reference": "bbd37aedd8df749916cffa2a947cfc4714d1ba2c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/rectorphp/rector/zipball/9c46ad17f57963932c9788fd1b0f1d07ff450370",
-                "reference": "9c46ad17f57963932c9788fd1b0f1d07ff450370",
+                "url": "https://api.github.com/repos/rectorphp/rector/zipball/bbd37aedd8df749916cffa2a947cfc4714d1ba2c",
+                "reference": "bbd37aedd8df749916cffa2a947cfc4714d1ba2c",
                 "shasum": ""
             },
             "require": {
@@ -1536,7 +1516,7 @@
             ],
             "support": {
                 "issues": "https://github.com/rectorphp/rector/issues",
-                "source": "https://github.com/rectorphp/rector/tree/2.3.7"
+                "source": "https://github.com/rectorphp/rector/tree/2.3.8"
             },
             "funding": [
                 {
@@ -1544,7 +1524,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-02-19T14:44:16+00:00"
+            "time": "2026-02-22T09:45:50+00:00"
         },
         {
             "name": "sebastian/diff",

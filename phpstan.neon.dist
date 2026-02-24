@@ -5,17 +5,7 @@ parameters:
   level: 8
   paths:
     - bin
-    - public
     - src
-    - tests
   excludePaths:
     - var
     - vendor
-
-  # Framework extensions (uncomment as needed)
-  # symfony:
-  #   container_xml_path: var/cache/dev/App_KernelDevDebugContainer.xml
-
-  # Doctrine extension (uncomment as needed)
-  # doctrine:
-  #   objectManagerLoader: tests/object-manager.php
