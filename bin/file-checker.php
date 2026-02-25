@@ -39,7 +39,7 @@ $extensionCounts = [
 
 $specificFilesToCheck = [
     'AGENTS.md', 'composer.json', 'eslint.config.mjs', '.gitignore',
-    '.markdownlint.json', 'package.json', '.php-cs-fixer.php',
+    '.markdownlintignore', '.markdownlint.json', 'package.json', '.php-cs-fixer.php',
     'phpstan.neon.dist', 'phpunit.xml.dist', 'playwright.config.ts', '.prettierignore',
     '.prettierrc.json', 'rector.php', '.shellcheckrc', '.stylelintignore',
     '.stylelintrc.json', '.twig-cs-fixer.dist.php', '.yamllint.yml'
