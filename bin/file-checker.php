@@ -38,8 +38,8 @@ $extensionCounts = [
 ];
 
 $specificFilesToCheck = [
-    'AGENTS.md', 'composer.json', 'eslint.config.mjs', '.eslintignore',
-    '.gitignore', '.markdownlint.json', 'package.json', '.php-cs-fixer.php',
+    'AGENTS.md', 'composer.json', 'eslint.config.mjs', '.gitignore',
+    '.markdownlint.json', 'package.json', '.php-cs-fixer.php',
     'phpstan.neon.dist', 'phpunit.xml.dist', 'playwright.config.ts', '.prettierignore',
     '.prettierrc.json', 'rector.php', '.shellcheckrc', '.stylelintignore',
     '.stylelintrc.json', '.twig-cs-fixer.dist.php', '.yamllint.yml'
@@ -49,7 +49,7 @@ $specificFilesToCheck = [
  * Mapping of preferred files to the alternative forms that should NOT exist.
  */
 $forbiddenAlternatives = [
-    'eslint.config.mjs'       => ['eslint.config.js', 'eslint.config.cjs', '.eslintrc.js', '.eslintrc.json', '.eslintrc.yml', '.eslintrc'],
+    'eslint.config.mjs'       => ['eslint.config.js', 'eslint.config.cjs', '.eslintrc.js', '.eslintrc.json', '.eslintrc.yml', '.eslintrc', '.eslintignore'],
     'playwright.config.ts'    => ['playwright.config.js', 'playwright.config.mjs', 'playwright.config.cjs'],
     'phpstan.neon.dist'       => ['phpstan.neon'],
     'phpunit.xml.dist'        => ['phpunit.xml', 'phpunit.dist.xml'],
