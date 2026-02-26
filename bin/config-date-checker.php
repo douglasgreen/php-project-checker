@@ -8,12 +8,25 @@ if (!is_dir($targetDir)) {
     exit(1);
 }
 
-// List files in the target directory (including hidden, excluding . and ..)
-$dirEntries = scandir($targetDir);
-if ($dirEntries === false) {
-    echo "Error: Could not read directory '$targetDir'.\n";
-    exit(1);
+/**
+ * Recursively gets all files in a directory.
+ */
+function getRecursiveFiles($dir) {
+    $files = [];
+    $items = scandir($dir);
+    foreach ($items as $item) {
+        if ($item === '.' || $item === '..') continue;
+        $path = $dir . DIRECTORY_SEPARATOR . $item;
+        if (is_dir($path)) {
+            $files = array_merge($files, getRecursiveFiles($path));
+        } else {
+            $files[] = $path;
+        }
+    }
+    return $files;
 }
+
+$dirFiles = getRecursiveFiles($targetDir);
 
 // Use git ls-files to get tracked files in the repository
 // Since the script runs in the root, this returns paths relative to the root.
@@ -64,20 +77,20 @@ function getModificationDate($filePath) {
 // Compare files in the target directory with files in the repository
 echo "Checking files in '$targetDir' against repository...\n\n";
 
-foreach ($dirEntries as $fileName) {
-    // Skip current and parent directory links
-    if ($fileName === '.' || $fileName === '..') continue;
-
-    $dirFilePath = $targetDir . DIRECTORY_SEPARATOR . $fileName;
-
-    // Only process actual files (no subdirectories or recursion as per requirements)
-    if (!is_file($dirFilePath)) continue;
+foreach ($dirFiles as $dirFilePath) {
+    $fileName = basename($dirFilePath);
 
     // Check if a file with this name exists anywhere in the Git repository
     if (isset($repoMap[$fileName])) {
         $newDate = getModificationDate($dirFilePath);
 
         foreach ($repoMap[$fileName] as $repoFilePath) {
+            // Don't compare a file against itself
+            if (realpath($dirFilePath) === realpath(__DIR__ . '/../' . $repoFilePath)) {
+                continue;
+            }
+
+            $oldDate = getModificationDate($repoFilePath);
             $oldDate = getModificationDate($repoFilePath);
 
             // If the date is missing in either file or they don't match, report it
