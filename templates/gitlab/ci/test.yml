@@ -1,0 +1,54 @@
+# modified: 2026-02-26
+
+test:unit:
+  stage: test
+  image: node:20
+  <<: *job-template
+  script:
+    - npm ci
+    - npm run test:ci
+  artifacts:
+    reports:
+      junit: reports/junit.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/cobertura-coverage.xml
+  coverage: '/All\sfiles.*?\s+(\d+\.\d+)/'
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+
+test:e2e:
+  stage: test
+  image: mcr.microsoft.com/playwright:v1.41.0-jammy
+  <<: *job-template
+  script:
+    - npm ci
+    - npx playwright install --with-deps
+    - npm run test:e2e
+  artifacts:
+    when: always
+    paths:
+      - playwright-report/
+      - test-results/
+    reports:
+      junit: test-results/junit-report.xml
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+
+test:phpunit:
+  stage: test
+  image: php:8.3-cli
+  <<: *job-template
+  script:
+    - |
+      apt-get update && apt-get install -y git unzip libpq-dev
+      docker-php-ext-install pdo_pgsql
+      curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+      composer install --no-interaction
+      vendor/bin/phpunit --coverage-text --colors=never
+  coverage: '/^\s*Lines:\s*\d+\.\d+\%/'
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'

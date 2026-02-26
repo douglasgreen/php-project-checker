@@ -1,0 +1,38 @@
+{
+  "modified": "2026-02-26",
+  "name": "owner/package",
+  "version": "1.0.0",
+  "description": "***",
+  "type": "module",
+  "scripts": {
+    "lint": "npm run lint:js && npm run lint:css && npm run lint:md && npm run lint:sh",
+    "lint:js": "eslint . --ext .js,.ts,.vue,.yml,.yaml",
+    "lint:css": "stylelint '**/*.css'",
+    "lint:md": "markdownlint '**/*.md'",
+    "lint:sh": "shellcheck '**/*.sh'",
+    "format": "prettier --write . && markdownlint '**/*.md' --fix"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0",
+    "eslint": "^9.0",
+    "eslint-config-prettier": "^10.1",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-playwright": "^2.7.0",
+    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-security": "^4.0.0",
+    "eslint-plugin-unicorn": "^63.0.0",
+    "eslint-plugin-vue": "^10.8",
+    "eslint-plugin-yml": "^3.3.0",
+    "globals": "^17.3.0",
+    "markdownlint-cli": "^0.47.0",
+    "prettier": "^3.8.1",
+    "prettier-plugin-sh": "^0.18.0",
+    "prettier-plugin-sql": "^0.19.2",
+    "shellcheck": "^4.1.0",
+    "stylelint": "^17.3.0",
+    "stylelint-config-standard": "^40.0.0",
+    "typescript-eslint": "^8.56.0",
+    "vue-eslint-parser": "^10.4.0",
+    "yaml-eslint-parser": "^2.0.0"
+  }
+}

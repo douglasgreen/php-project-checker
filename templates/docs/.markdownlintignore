@@ -1,0 +1,32 @@
+# modified: 2026-02-26
+
+# This file ignores build directories and project tool directories.
+
+# Project-specific settings (put your files here)
+
+# AI
+.aider*
+
+# Build directories
+build/
+.cache/
+.next/
+
+# Composer
+vendor/
+
+# Grunt
+.grunt/
+
+# Husky
+.husky/_/
+
+# Node
+.npm/
+node_modules/
+
+# Python
+__pycache__/
+
+# Symfony
+var/

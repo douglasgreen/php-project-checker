@@ -1,0 +1,78 @@
+# modified: 2026-02-26
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.gitlab-ci.yml
+.github
+.travis.yml
+.azure-pipelines.yml
+
+# Documentation
+*.md
+docs/
+README.md
+CHANGELOG.md
+LICENSE
+
+# Testing
+tests/
+coverage/
+.nyc_output
+*.test.js
+*.spec.js
+playwright-report/
+test-results/
+
+# Development
+.env
+.env.*
+!.env.example
+.env.local
+.env.development
+.env.test
+.env.production
+*.log
+logs/
+*.pid
+*.seed
+*.pid.lock
+
+# Dependencies
+node_modules/
+vendor/
+bower_components/
+
+# Build outputs
+dist/
+build/
+out/
+target/
+*.tgz
+*.tar.gz
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Cache
+.cache/
+tmp/
+temp/
+*.tmp
+
+# Security
+secrets/
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx

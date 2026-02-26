@@ -1,0 +1,49 @@
+# modified: 2026-02-26
+
+[sqlfluff]
+dialect = ansi
+templater = jinja
+rules = all
+exclude_rules = L034,L054
+max_line_length = 120
+processes = -1
+
+[sqlfluff:templater:jinja]
+loader_search_path = include
+ignore_template_errors = True
+
+[sqlfluff:indentation]
+indent_unit = space
+tab_width = 4
+allow_implicit_indents = True
+indented_joins = false
+indented_using_on = true
+indented_ctes = true
+template_blocks_indent = true
+
+[sqlfluff:layout:type:comma]
+line_position = leading
+
+[sqlfluff:capitalisation:keywords]
+capitalisation_policy = upper
+
+[sqlfluff:capitalisation:identifiers]
+capitalisation_policy = lower
+extended_capitalisation_policy = snake
+
+[sqlfluff:capitalisation:functions]
+capitalisation_policy = upper
+
+[sqlfluff:capitalisation:types]
+capitalisation_policy = upper
+
+[sqlfluff:capitalisation:literals]
+capitalisation_policy = lower
+
+[sqlfluff:rules:aliasing.length]
+min_alias_length = 3
+max_alias_length = 15
+ignore_short_aliases = False
+
+[sqlfluff:rules:convention.not_equal]
+preferred_not_equal_style = c_style

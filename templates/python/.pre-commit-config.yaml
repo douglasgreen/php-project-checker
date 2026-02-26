@@ -1,0 +1,135 @@
+# modified: 2026-02-26
+
+repos:
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-added-large-files
+        args: ["--maxkb=1000"]
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-shebang-scripts-are-executable
+      - id: check-symlinks
+      - id: check-toml
+      - id: check-xml
+      - id: check-yaml
+      - id: detect-aws-credentials
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+      - id: trailing-whitespace
+        args: ["--markdown-linebreak-ext=md"]
+
+  # Python (Ruff + Black)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.0
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+        types_or: [python, pyi, jupyter]
+      - id: ruff-format
+        types_or: [python, pyi, jupyter]
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        additional_dependencies: [pydantic>=2.0.0, types-all]
+        args: ["--strict"]
+
+  # JavaScript/TypeScript/Vue
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v9.0.0
+    hooks:
+      - id: eslint
+        files: \.[jt]sx?$
+        types: [file]
+        additional_dependencies:
+          - eslint@9.0.0
+          - typescript-eslint@7.0.0
+          - eslint-plugin-vue@9.0.0
+          - eslint-plugin-security@2.0.0
+          - eslint-plugin-playwright@1.0.0
+
+  # Go
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: v0.5.1
+    hooks:
+      - id: go-fmt
+      - id: go-imports
+      - id: golangci-lint
+      - id: go-unit-tests
+
+  # PHP
+  - repo: https://github.com/digitalpulp/pre-commit-php
+    rev: 1.4.0
+    hooks:
+      - id: php-lint
+      - id: php-cs-fixer
+        args: ["--config=.php-cs-fixer.dist.php"]
+      - id: php-stan
+        args: ["analyse", "--configuration=phpstan.neon"]
+
+  # Shell scripts
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: v3.7.0-1
+    hooks:
+      - id: shfmt
+        args: ["-i", "2", "-ci", "-bn", "-sr"]
+      - id: shellcheck
+        args: ["-e", "SC1071"]
+
+  # SQL
+  - repo: https://github.com/sqlfluff/sqlfluff
+    rev: 3.0.0
+    hooks:
+      - id: sqlfluff-lint
+        args: ["--dialect=ansi"]
+      - id: sqlfluff-fix
+        args: ["--dialect=ansi"]
+
+  # Twig
+  - repo: local
+    hooks:
+      - id: twig-cs-fixer
+        name: Twig CS Fixer
+        entry: vendor/bin/twig-cs-fixer
+        language: system
+        files: \.twig$
+        args: ["lint"]
+
+  # XML/HTML validation
+  - repo: local
+    hooks:
+      - id: xmllint
+        name: XML well-formedness check
+        entry: xmllint --noout
+        language: system
+        files: \.(xml|xsd|xslt|sch)$
+
+  # Security scanning
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ["--baseline", ".secrets.baseline"]
+        exclude: package.lock.json
+
+  # Spelling
+  - repo: https://github.com/streetsidesoftware/cspell-cli
+    rev: v8.17.0
+    hooks:
+      - id: cspell
+        args: ["--no-progress", "--no-summary"]
+        exclude: (package-lock.json|yarn.lock|go.sum)
+
+  # Markdown
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.41.0
+    hooks:
+      - id: markdownlint
+        args: ["--config", ".markdownlint.json"]

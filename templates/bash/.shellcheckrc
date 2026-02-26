@@ -1,0 +1,23 @@
+# modified: 2026-02-26
+
+# External sources
+shell=bash
+external-sources=true
+
+# Enable all optional checks
+enable=all
+
+# Disabled checks (with justification)
+# SC1090: Can't follow non-constant source. Use a directive to specify location.
+disable=SC1090
+# SC1091: Not following sourced file (usually external scripts)
+disable=SC1091
+# SC2154: Variables referenced but not assigned (often environment variables)
+disable=SC2154
+
+# Require specific shebang
+require-variable-braces=true
+check-sourced=true
+
+# Minimum severity to report
+severity=warning

@@ -1,0 +1,79 @@
+# modified: 2026-02-26
+
+# Export ignore (don't include in composer archive or git archive)
+/.github export-ignore
+/.gitlab-ci.yml export-ignore
+/tests export-ignore
+/docs export-ignore
+/.gitattributes export-ignore
+/.gitignore export-ignore
+/.php-cs-fixer.php export-ignore
+/phpstan.neon export-ignore
+/phpunit.xml.dist export-ignore
+/rector.php export-ignore
+/package.json export-ignore
+/package-lock.json export-ignore
+/node_modules export-ignore
+/resources/assets export-ignore
+
+# Auto detect text files and perform LF normalization
+* text=auto eol=lf
+
+# Source code
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.vue text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+*.xml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf
+*.sh text eol=lf
+*.py text eol=lf
+*.php text eol=lf
+*.go text eol=lf
+*.java text eol=lf
+*.sql text eol=lf
+*.twig text eol=lf
+
+# Documentation
+*.md text eol=lf
+*.txt text eol=lf
+
+# Configs
+*.ini text eol=lf
+*.conf text eol=lf
+.env text eol=lf
+.env.example text eol=lf
+
+# Scripts
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.mov binary
+*.mp4 binary
+*.mp3 binary
+*.flv binary
+*.fla binary
+*.swf binary
+*.gz binary
+*.zip binary
+*.7z binary
+*.ttf binary
+*.eot binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+*.exe binary
+*.dll binary
