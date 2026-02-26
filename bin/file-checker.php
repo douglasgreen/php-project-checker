@@ -47,7 +47,7 @@ $extensionCounts = [
 ];
 
 $specificFilesToCheck = [
-    'AGENTS.md', 'composer.json', 'eslint.config.mjs', '.gitignore',
+    'composer.json', 'eslint.config.mjs', '.gitignore',
     '.markdownlintignore', '.markdownlint.json', 'package.json', '.php-cs-fixer.php',
     'phpstan.neon.dist', 'phpunit.xml.dist', 'playwright.config.ts', '.prettierignore',
     '.prettierrc.json', 'rector.php', '.shellcheckrc', '.stylelintignore',
