@@ -28,6 +28,7 @@ $extensionCounts = [
     'json' => 0,
     'jsx'  => 0,
     'md'   => 0,
+    'php'  => 0,
     'sh'   => 0,
     'sql'  => 0,
     'ts'   => 0,
@@ -84,19 +85,20 @@ foreach ($files as $file) {
     }
 
     // 3. Extension Counting
-    if (preg_match('/\.json$/', $file)) $extensionCounts['json']++;
-    if (preg_match('/\.(yml|yaml)$/', $file)) $extensionCounts['yaml']++;
-    if (preg_match('/\.sh$/', $file)) $extensionCounts['sh']++;
-    if (preg_match('/\.md$/', $file)) $extensionCounts['md']++;
-    if (preg_match('/\.js$/', $file)) $extensionCounts['js']++;
-    if (preg_match('/\.ts$/', $file)) $extensionCounts['ts']++;
-    if (preg_match('/\.jsx$/', $file)) $extensionCounts['jsx']++;
-    if (preg_match('/\.tsx$/', $file)) $extensionCounts['tsx']++;
-    if (preg_match('/\.vue$/', $file)) $extensionCounts['vue']++;
     if (preg_match('/\.css$/', $file)) $extensionCounts['css']++;
     if (preg_match('/\.html?$/', $file)) $extensionCounts['html']++;
-    if (preg_match('/\.twig$|twig\.html$/', $file)) $extensionCounts['twig']++;
+    if (preg_match('/\.js$/', $file)) $extensionCounts['js']++;
+    if (preg_match('/\.json$/', $file)) $extensionCounts['json']++;
+    if (preg_match('/\.jsx$/', $file)) $extensionCounts['jsx']++;
+    if (preg_match('/\.md$/', $file)) $extensionCounts['md']++;
+    if (preg_match('/\.php$/', $file)) $extensionCounts['php']++;
+    if (preg_match('/\.sh$/', $file)) $extensionCounts['sh']++;
     if (preg_match('/\.sql$/', $file)) $extensionCounts['sql']++;
+    if (preg_match('/\.ts$/', $file)) $extensionCounts['ts']++;
+    if (preg_match('/\.tsx$/', $file)) $extensionCounts['tsx']++;
+    if (preg_match('/\.twig$|twig\.html$/', $file)) $extensionCounts['twig']++;
+    if (preg_match('/\.vue$/', $file)) $extensionCounts['vue']++;
+    if (preg_match('/\.(yml|yaml)$/', $file)) $extensionCounts['yaml']++;
 
     if ($isTopLevel) {
         // 4. Specific Top-level files (Preferred)
