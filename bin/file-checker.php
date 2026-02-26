@@ -5,6 +5,14 @@
  * Repository Reporter using git ls-files
  */
 
+// Parse command line arguments
+$fixMode = false;
+foreach ($argv as $arg) {
+    if ($arg === '--fix') {
+        $fixMode = true;
+    }
+}
+
 // 1. Get list of files from git
 $gitOutput = shell_exec('git ls-files 2>/dev/null');
 
@@ -165,6 +173,172 @@ foreach ($forbiddenAlternatives as $preferred => $alternatives) {
 
 if (!$anyForbiddenFound) {
     echo "   - No conflicting alternative files found. Excellent.\n";
+}
+
+// --- Fix Mode: Copy Template Files ---
+if ($fixMode) {
+    echo "\n=== FIX MODE: Copying Template Files ===\n\n";
+
+    $sourceTemplatesDir = __DIR__ . '/../templates';
+    $targetDir = getcwd();
+
+    if (!is_dir($sourceTemplatesDir)) {
+        echo "Error: Templates directory not found at $sourceTemplatesDir\n";
+        exit(1);
+    }
+
+    // Define always-copy templates
+    $alwaysCopy = [
+        'git',
+        'md',
+        'prettier',
+    ];
+
+    // Always copy package.json from js
+    $alwaysCopyFiles = [
+        'js/package.json',
+    ];
+
+    // Define conditional templates based on file types
+    $conditionalTemplates = [
+        'css'  => ['css'],
+        'js'   => ['js'],
+        'jsx'  => ['js'],
+        'php'  => ['php'],
+        'sh'   => ['bash'],
+        'ts'   => ['js'],
+        'tsx'  => ['js'],
+        'twig' => ['twig'],
+        'vue'  => ['js'],
+        'yaml' => ['yaml', 'js'],
+    ];
+
+    $copiedFiles = [];
+    $errors = [];
+
+    /**
+     * Copy a directory recursively from source to target.
+     */
+    $copyDirectory = function (string $sourcePath, string $targetPath, array &$copiedFiles, array &$errors) use (&$copyDirectory): void {
+        if (!is_dir($sourcePath)) {
+            return;
+        }
+
+        if (!is_dir($targetPath)) {
+            if (!mkdir($targetPath, 0755, true)) {
+                $errors[] = "Failed to create directory: $targetPath";
+                return;
+            }
+        }
+
+        $items = scandir($sourcePath);
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+
+            $sourceItem = $sourcePath . '/' . $item;
+            $targetItem = $targetPath . '/' . $item;
+
+            if (is_dir($sourceItem)) {
+                $copyDirectory($sourceItem, $targetItem, $copiedFiles, $errors);
+            } elseif (is_file($sourceItem)) {
+                if (copy($sourceItem, $targetItem)) {
+                    $copiedFiles[] = substr($targetItem, strlen(getcwd()) + 1);
+                } else {
+                    $errors[] = "Failed to copy: $sourceItem -> $targetItem";
+                }
+            }
+        }
+    };
+
+    // Copy always-copy directories
+    foreach ($alwaysCopy as $templateDir) {
+        $sourcePath = $sourceTemplatesDir . '/' . $templateDir;
+        $targetPath = $targetDir;
+        echo "Copying templates/$templateDir/* ...\n";
+        $copyDirectory($sourcePath, $targetPath, $copiedFiles, $errors);
+    }
+
+    // Copy always-copy files
+    foreach ($alwaysCopyFiles as $templateFile) {
+        $sourcePath = $sourceTemplatesDir . '/' . $templateFile;
+        $targetPath = $targetDir . '/' . basename($templateFile);
+        if (is_file($sourcePath)) {
+            $targetDirForFile = dirname($targetPath);
+            if (!is_dir($targetDirForFile)) {
+                mkdir($targetDirForFile, 0755, true);
+            }
+            if (copy($sourcePath, $targetPath)) {
+                $copiedFiles[] = basename($templateFile);
+                echo "Copying templates/$templateFile\n";
+            } else {
+                $errors[] = "Failed to copy: $sourcePath -> $targetPath";
+            }
+        }
+    }
+
+    // Copy conditional templates based on file type counts
+    foreach ($conditionalTemplates as $fileType => $templateDirs) {
+        if ($extensionCounts[$fileType] > 0) {
+            foreach ($templateDirs as $templateDir) {
+                $sourcePath = $sourceTemplatesDir . '/' . $templateDir;
+                $targetPath = $targetDir;
+                // Skip js/package.json if already copied
+                if ($templateDir === 'js') {
+                    echo "Copying templates/$templateDir/* (excluding package.json if exists)...\n";
+                    if (is_dir($sourcePath)) {
+                        $items = scandir($sourcePath);
+                        foreach ($items as $item) {
+                            if ($item === '.' || $item === '..') {
+                                continue;
+                            }
+                            // Skip package.json as it's handled separately
+                            if ($item === 'package.json') {
+                                continue;
+                            }
+                            $sourceItem = $sourcePath . '/' . $item;
+                            $targetItem = $targetPath . '/' . $item;
+                            if (is_dir($sourceItem)) {
+                                $copyDirectory($sourceItem, $targetItem, $copiedFiles, $errors);
+                            } elseif (is_file($sourceItem)) {
+                                if (copy($sourceItem, $targetItem)) {
+                                    $copiedFiles[] = $item;
+                                } else {
+                                    $errors[] = "Failed to copy: $sourceItem -> $targetItem";
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    echo "Copying templates/$templateDir/* ...\n";
+                    $copyDirectory($sourcePath, $targetPath, $copiedFiles, $errors);
+                }
+            }
+        }
+    }
+
+    // Remove duplicates from copied files
+    $copiedFiles = array_unique($copiedFiles);
+
+    // Report results
+    if (!empty($copiedFiles)) {
+        echo "\nCopied " . count($copiedFiles) . " file(s):\n";
+        foreach ($copiedFiles as $file) {
+            echo "   - $file\n";
+        }
+    }
+
+    if (!empty($errors)) {
+        echo "\nErrors:\n";
+        foreach ($errors as $error) {
+            echo "   - $error\n";
+        }
+    }
+
+    if (empty($copiedFiles) && empty($errors)) {
+        echo "No files needed to be copied.\n";
+    }
 }
 
 echo "\nDone.\n";
