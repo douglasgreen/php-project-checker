@@ -1,27 +1,21 @@
 #!/usr/bin/env php
 <?php
 
-// 1. Validate command line arguments
-if ($argc !== 2) {
-    echo "Usage: php " . basename($argv[0]) . " <directory_name>\n";
-    exit(1);
-}
-
-$targetDir = rtrim($argv[1], DIRECTORY_SEPARATOR);
+$targetDir = __DIR__ . '/../templates';
 
 if (!is_dir($targetDir)) {
     echo "Error: Directory '$targetDir' not found.\n";
     exit(1);
 }
 
-// 2. List files in the target directory (including hidden, excluding . and ..)
+// List files in the target directory (including hidden, excluding . and ..)
 $dirEntries = scandir($targetDir);
 if ($dirEntries === false) {
     echo "Error: Could not read directory '$targetDir'.\n";
     exit(1);
 }
 
-// 3. Use git ls-files to get tracked files in the repository
+// Use git ls-files to get tracked files in the repository
 // Since the script runs in the root, this returns paths relative to the root.
 $repoFilesOutput = shell_exec('git ls-files');
 if ($repoFilesOutput === null) {
@@ -31,7 +25,7 @@ if ($repoFilesOutput === null) {
 
 $repoFiles = explode("\n", trim($repoFilesOutput));
 
-// 4. Create a mapping of filename (basename) to its full repo path(s)
+// Create a mapping of filename (basename) to its full repo path(s)
 // This handles cases where multiple files in different subdirectories have the same name.
 $repoMap = [];
 foreach ($repoFiles as $repoPath) {
@@ -67,7 +61,7 @@ function getModificationDate($filePath) {
     return $foundDate;
 }
 
-// 5. Compare files in the target directory with files in the repository
+// Compare files in the target directory with files in the repository
 echo "Checking files in '$targetDir' against repository...\n\n";
 
 foreach ($dirEntries as $fileName) {
