@@ -60,19 +60,19 @@ const ignorePatterns = [
 // ------------------------------------------------------------------
 export default tseslint.config(
     // ----------------------------------------------------------------
-    // 1️⃣ Base JavaScript
+    // Base JavaScript
     // ----------------------------------------------------------------
     js.configs.recommended,
 
     // ----------------------------------------------------------------
-    // 2️⃣ TypeScript & Vue
+    // TypeScript & Vue
     // ----------------------------------------------------------------
     ...tseslint.configs.recommendedTypeChecked,
     ...tseslint.configs.strictTypeChecked,
     ...pluginVue.configs['flat/recommended'],
 
     // ----------------------------------------------------------------
-    // 3️⃣ Global language options & parsers
+    // Global language options & parsers
     // ----------------------------------------------------------------
     {
         languageOptions: {
@@ -97,7 +97,7 @@ export default tseslint.config(
     },
 
     // ----------------------------------------------------------------
-    // 4️⃣ YAML files
+    // YAML files
     // ----------------------------------------------------------------
     ...pluginYaml.configs.recommended,
     {
@@ -114,7 +114,7 @@ export default tseslint.config(
     },
 
     // ----------------------------------------------------------------
-    // 5️⃣ Security baseline
+    // Security baseline
     // ----------------------------------------------------------------
     {
         plugins: { security: pluginSecurity },
@@ -125,7 +125,7 @@ export default tseslint.config(
     },
 
     // ----------------------------------------------------------------
-    // 6️⃣ Code‑quality (unicorn)
+    // Code‑quality (unicorn)
     // ----------------------------------------------------------------
     {
         plugins: { unicorn: pluginUnicorn },
@@ -136,7 +136,7 @@ export default tseslint.config(
     },
 
     // ----------------------------------------------------------------
-    // 7️⃣ Test‑file overrides (Playwright)
+    // Test‑file overrides (Playwright)
     // ----------------------------------------------------------------
     {
         files: [
@@ -149,7 +149,7 @@ export default tseslint.config(
     },
 
     // ----------------------------------------------------------------
-    // 8️⃣ Accessibility for Vue/JSX
+    // Accessibility for Vue/JSX
     // ----------------------------------------------------------------
     {
         files: ['**/*.{vue,jsx,tsx}'],
@@ -160,7 +160,7 @@ export default tseslint.config(
     },
 
     // ----------------------------------------------------------------
-    // 9️⃣ Custom TypeScript / general rules
+    // Custom TypeScript / general rules
     // ----------------------------------------------------------------
     {
         rules: {
@@ -180,14 +180,14 @@ export default tseslint.config(
     },
 
     // ----------------------------------------------------------------
-    // 🔟 Global ignore patterns (replaces .eslintignore)
+    // Global ignore patterns (replaces .eslintignore)
     // ----------------------------------------------------------------
     {
         ignores: ignorePatterns,
     },
 
     // ----------------------------------------------------------------
-    // 1️⃣1️⃣ Prettier – must be last to override conflicting rules
+    // Prettier – must be last to override conflicting rules
     // ----------------------------------------------------------------
     eslintConfigPrettier,
 );
