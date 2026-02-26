@@ -5,11 +5,13 @@ namespace DouglasGreen\PHPProjectChecker;
 class ConfigDateChecker
 {
     private string $targetDir;
+    private bool $fix;
     private array $repoMap = [];
 
-    public function __construct(string $targetDir)
+    public function __construct(string $targetDir, bool $fix = false)
     {
         $this->targetDir = $targetDir;
+        $this->fix = $fix;
     }
 
     public function run(): void
@@ -46,6 +48,15 @@ class ConfigDateChecker
                         echo "  File in Repo: $repoFilePath\n";
                         echo "  Old Date:     $displayOldDate\n";
                         echo "  New Date:     $displayNewDate\n";
+
+                        if ($this->fix) {
+                            if (copy($dirFilePath, $repoFilePath)) {
+                                echo "  Action:       Updated successfully.\n";
+                            } else {
+                                echo "  Action:       Failed to update file.\n";
+                            }
+                        }
+
                         echo "--------------------------------------------------\n";
                     }
                 }
