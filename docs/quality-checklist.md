@@ -4,19 +4,19 @@ This is the checklist for code cleanup.
 
 1. Confirm that all relevant config files are configured, up-to-date, and in use.
 
-* check-config-dates.php
+- check-config-dates.php
 
 2. Confirm that all scripts in php-project-checker pass their checks.
 
-* class-checker.php
-* composer-checker.php
-* doc-checker.php
-* file-checker.php
-* function-checker.php
-* gitlab-ci-checker.php
-* package-checker.php
-* sort-composer-json.php
-* sort-package-json.php
+- class-checker.php
+- composer-checker.php
+- doc-checker.php
+- file-checker.php
+- function-checker.php
+- gitlab-ci-checker.php
+- package-checker.php
+- sort-composer-json.php
+- sort-package-json.php
 
 3. Run all fixing and formatting scripts in composer.json and package.json.
 

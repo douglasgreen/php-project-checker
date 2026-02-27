@@ -7,7 +7,7 @@ import tseslint from 'typescript-eslint';
 export default [
     ...pluginVue.configs['flat/recommended'],
     {
-        files:['**/*.vue'],
+        files: ['**/*.vue'],
         languageOptions: {
             parser: vueParser,
             parserOptions: {

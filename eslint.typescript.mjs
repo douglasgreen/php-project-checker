@@ -16,7 +16,7 @@ export default tseslint.config(
         rules: {
             '@typescript-eslint/no-explicit-any': 'error',
             '@typescript-eslint/consistent-type-imports': 'error',
-            '@typescript-eslint/restrict-template-expressions':[
+            '@typescript-eslint/restrict-template-expressions': [
                 'error',
                 {
                     allowNumber: true,
@@ -26,5 +26,5 @@ export default tseslint.config(
                 },
             ],
         },
-    }
+    },
 );
