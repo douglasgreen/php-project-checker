@@ -150,15 +150,25 @@ echo "   - Files in tests/ directory: " . ($hasTestsDirFiles ? "Yes" : "No") . "
 
 // Requirement 3
 echo "\n3. File Type Counts:\n";
+$hasAnyFiles = false;
 foreach ($extensionCounts as $type => $count) {
-    printf("   - %-10s : %d\n", $type, $count);
+    if ($count > 0) {
+        $hasAnyFiles = true;
+        printf("   - %-10s : %d\n", $type, $count);
+    }
+}
+if (!$hasAnyFiles) {
+    echo "   - None found.\n";
 }
 
 // Requirement 4
 echo "\n4. Specific Top-level Files Status (Preferred):\n";
-foreach ($specificFilesToCheck as $target) {
-    $exists = in_array($target, $foundSpecificFiles);
-    printf("   - [%s] %s\n", $exists ? "X" : " ", $target);
+if (!empty($foundSpecificFiles)) {
+    foreach ($foundSpecificFiles as $file) {
+        printf("   - [X] %s\n", $file);
+    }
+} else {
+    echo "   - None found.\n";
 }
 
 // Requirement 5
