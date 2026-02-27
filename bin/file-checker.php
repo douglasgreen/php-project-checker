@@ -36,6 +36,7 @@ $extensionCounts = [
     'json' => 0,
     'jsx'  => 0,
     'md'   => 0,
+    'mjs'  => 0,
     'php'  => 0,
     'sh'   => 0,
     'sql'  => 0,
@@ -99,6 +100,7 @@ foreach ($files as $file) {
     if (preg_match('/\.json$/', $file)) $extensionCounts['json']++;
     if (preg_match('/\.jsx$/', $file)) $extensionCounts['jsx']++;
     if (preg_match('/\.md$/', $file)) $extensionCounts['md']++;
+    if (preg_match('/\.mjs$/', $file)) $extensionCounts['mjs']++;
     if (preg_match('/\.php$/', $file)) $extensionCounts['php']++;
     if (preg_match('/\.sh$/', $file)) $extensionCounts['sh']++;
     if (preg_match('/\.sql$/', $file)) $extensionCounts['sql']++;
@@ -204,6 +206,7 @@ if ($fixMode) {
         'css'  => ['css'],
         'js'   => ['js'],
         'jsx'  => ['js'],
+        'mjs'   => ['js'],
         'php'  => ['php'],
         'sh'   => ['bash'],
         'ts'   => ['js'],

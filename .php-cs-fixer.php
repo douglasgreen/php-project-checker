@@ -1,6 +1,5 @@
 <?php
-// version: 1.0.1
-// modified: 2026-02-22
+// modified: 2026-02-26
 
 use PhpCsFixer\Runner\Parallel\ParallelConfigFactory;
 use PhpCsFixer\Config;
@@ -10,6 +9,7 @@ $finder = Finder::create()
     ->in([
         __DIR__ . '/bin',
         __DIR__ . '/src',
+        __DIR__ . '/templates',
     ])
     ->name('*.php')
     ->notName('*.blade.php')
@@ -23,7 +23,10 @@ return (new Config())
 
         // Strict Type Safety
         'nullable_type_declaration_for_default_null_value' => true,
-        'no_superfluous_phpdoc_tags' => false,
+        'no_superfluous_phpdoc_tags' => [
+            'allow_mixed' => true,
+            'remove_inheritdoc' => false,
+        ],
 
         // Architecture & Design
         'class_attributes_separation' => [
@@ -76,7 +79,7 @@ return (new Config())
             'method' => 'multi',
         ],
         'phpdoc_var_without_name' => true,
-        'phpdoc_no_empty_return' => false,
+        'phpdoc_no_empty_return' => true,
         'phpdoc_separation' => true,
         'phpdoc_types_order' => [
             'null_adjustment' => 'always_last',

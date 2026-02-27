@@ -1,6 +1,5 @@
 {
-  "_version": "1.1.0",
-  "_modified": "2026-02-22",
+  "modified": "2026-02-26",
   "name": "douglasgreen/php-project-checker",
   "description": "Check PHP project files for conformance with requirements",
   "type": "project",
