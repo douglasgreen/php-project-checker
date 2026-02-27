@@ -165,7 +165,7 @@ if (!$hasAnyFiles) {
 echo "\n4. Specific Top-level Files Status (Preferred):\n";
 if (!empty($foundSpecificFiles)) {
     foreach ($foundSpecificFiles as $file) {
-        printf("   - [X] %s\n", $file);
+        printf("   - %s\n", $file);
     }
 } else {
     echo "   - None found.\n";
