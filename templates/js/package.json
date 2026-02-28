@@ -1,5 +1,5 @@
 {
-  "modified": "2026-02-26",
+  "modified": "2026-02-27",
   "name": "owner/package",
   "version": "1.0.0",
   "description": "***",
@@ -9,7 +9,7 @@
     "lint:js": "eslint . --ext .js,.ts,.vue,.yml,.yaml",
     "lint:css": "stylelint '**/*.css'",
     "lint:md": "markdownlint '**/*.md'",
-    "lint:sh": "shellcheck '**/*.sh'",
+    "lint:sh": "shellcheck **/*.sh",
     "format": "prettier --write . && markdownlint '**/*.md' --fix"
   },
   "devDependencies": {
