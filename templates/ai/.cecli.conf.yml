@@ -1,4 +1,4 @@
-# modified: 2026-02-28
+# modified: 2026-03-02
 
 tui: false # modern terminal UI with nice keybindings
 agent: false # enable agent mode (more autonomous)
@@ -7,7 +7,6 @@ auto-save: true
 cache-prompts: true
 use-enhanced-map: true
 watch-files: true
-model_settings_file: .cecli.model.settings.yml
 
 # OpenRouter models
 #
