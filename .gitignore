@@ -1,7 +1,6 @@
-# modified: 2026-02-28
+# modified: 2026-03-02
 
 # This file ignores build directories and project tool directories.
-# Remove composer.lock and package-lock.json for project type, leave in library type.
 
 # Project-specific settings (put your files here)
 
@@ -37,6 +36,7 @@ npm-debug.log*
 package-lock.json
 
 # PHPUnit
+.phpunit.cache
 .phpunit.result.cache
 
 # Python
