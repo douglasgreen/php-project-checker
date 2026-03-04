@@ -54,29 +54,6 @@ class ClassAnalyzer
         $this->printReport();
     }
 
-    private function findGitRoot(): ?string
-    {
-        $dir = getcwd();
-        if ($dir === false) {
-            return null;
-        }
-
-        while ($dir !== '/') {
-            if (is_dir($dir . '/.git')) {
-                return $dir;
-            }
-
-            $parent = dirname($dir);
-            if ($parent === $dir) {
-                break;
-            }
-
-            $dir = $parent;
-        }
-
-        return null;
-    }
-
     /**
      * @return array<int, string>
      */
@@ -485,12 +462,6 @@ class ClassAnalyzer
         }
 
        return null;
-    }
-
-    private function findGitRoot(): ?string
-    {
-        // Deprecated: Logic moved to RepoMapBuilder
-        return $this->gitRoot;
     }
 
     private function resolveName(string $name): string
