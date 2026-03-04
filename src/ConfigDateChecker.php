@@ -6,12 +6,13 @@ class ConfigDateChecker
 {
     private string $targetDir;
     private bool $fix;
-    private array $repoMap = [];
+    private RepoMapBuilder $repoMapBuilder;
 
     public function __construct(string $targetDir, bool $fix = false)
     {
         $this->targetDir = $targetDir;
         $this->fix = $fix;
+        $this->repoMapBuilder = new RepoMapBuilder();
     }
 
     public function run(): void
@@ -22,17 +23,25 @@ class ConfigDateChecker
         }
 
         $dirFiles = $this->getRecursiveFiles($this->targetDir);
-        $this->buildRepoMap();
+        $repoFiles = $this->repoMapBuilder->getAllFiles();
+        $repoMap = [];
+        foreach ($repoFiles as $repoPath) {
+            if (empty($repoPath)) {
+                continue;
+            }
+            $name = basename($repoPath);
+            $repoMap[$name][] = $repoPath;
+        }
 
         echo "Checking files in '{$this->targetDir}' against repository...\n\n";
 
         foreach ($dirFiles as $dirFilePath) {
             $fileName = basename($dirFilePath);
 
-            if (isset($this->repoMap[$fileName])) {
+            if (isset($repoMap[$fileName])) {
                 $newDate = $this->getModificationDate($dirFilePath);
 
-                foreach ($this->repoMap[$fileName] as $repoFilePath) {
+                foreach ($repoMap[$fileName] as $repoFilePath) {
                     // Don't compare a file against itself
                     if (realpath($dirFilePath) === realpath(getcwd() . '/' . $repoFilePath)) {
                         continue;
@@ -80,24 +89,6 @@ class ConfigDateChecker
             }
         }
         return $files;
-    }
-
-    private function buildRepoMap(): void
-    {
-        $repoFilesOutput = shell_exec('git ls-files');
-        if ($repoFilesOutput === null) {
-            echo "Error: Failed to execute 'git ls-files'. Ensure you are in a git repository.\n";
-            exit(1);
-        }
-
-        $repoFiles = explode("\n", trim($repoFilesOutput));
-        foreach ($repoFiles as $repoPath) {
-            if (empty($repoPath)) {
-                continue;
-            }
-            $name = basename($repoPath);
-            $this->repoMap[$name][] = $repoPath;
-        }
     }
 
     private function getModificationDate(string $filePath): ?string

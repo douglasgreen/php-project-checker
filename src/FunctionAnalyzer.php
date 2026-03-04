@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace DouglasGreen\PHPProjectChecker;
 
 use Exception;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 
 class FunctionAnalyzer
 {
@@ -18,9 +16,12 @@ class FunctionAnalyzer
 
     private readonly string $gitRoot;
 
+    private RepoMapBuilder $repoMapBuilder;
+
     public function __construct(?string $gitRoot = null)
     {
-        $root = $gitRoot ?: $this->findGitRoot();
+        $this->repoMapBuilder = new RepoMapBuilder($gitRoot);
+        $root = $this->repoMapBuilder->getGitRoot();
         if ($root === null) {
             throw new Exception('Not a git repository (or any parent up to mount point)');
         }
@@ -47,77 +48,12 @@ class FunctionAnalyzer
         $this->printReport();
     }
 
-    private function findGitRoot(): ?string
-    {
-        $dir = getcwd();
-        if ($dir === false) {
-            return null;
-        }
-
-        while ($dir !== '/') {
-            if (is_dir($dir . '/.git')) {
-                return $dir;
-            }
-
-            $parent = dirname($dir);
-            if ($parent === $dir) {
-                break;
-            }
-
-            $dir = $parent;
-        }
-
-        return null;
-    }
-
     /**
      * @return array<int, string>
      */
     private function getPhpFiles(): array
     {
-        $files = [];
-        $command = 'git -C ' . escapeshellarg($this->gitRoot) . " ls-files '*.php' 2>&1";
-        exec($command, $output, $returnCode);
-
-        if ($returnCode !== 0) {
-            // Fallback to recursive directory scan
-            $this->scanDirectory($this->gitRoot, $files);
-        } else {
-            foreach ($output as $file) {
-                // Skip unit tests
-                if (preg_match('#^tests/#', $file)) {
-                    continue;
-                }
-
-                $fullPath = $this->gitRoot . '/' . $file;
-                if (file_exists($fullPath)) {
-                    $files[] = $fullPath;
-                }
-            }
-        }
-
-        return $files;
-    }
-
-    /**
-     * @param array<int, mixed> $files
-     */
-    private function scanDirectory(string $dir, array &$files): void
-    {
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
-            RecursiveIteratorIterator::SELF_FIRST,
-        );
-
-        foreach ($iterator as $file) {
-            if ($file->isFile() && $file->getExtension() === 'php') {
-                // Skip vendor and common excluded directories
-                $path = $file->getPathname();
-                if (!preg_match('#/(vendor|node_modules|\.git)/#', (string) $path)) {
-                    $files[] = $path;
-                }
-            }
-        }
+        return $this->repoMapBuilder->getPhpFiles();
     }
 
     private function parseFile(string $file): void

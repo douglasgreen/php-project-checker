@@ -22,6 +22,8 @@ class DocStandardsChecker
 
     private readonly string $rootDir;
 
+    private RepoMapBuilder $repoMapBuilder;
+
     /** @var array<int, string> */
     private array $files = [];
 
@@ -65,11 +67,13 @@ class DocStandardsChecker
 
     public function __construct(string $directory)
     {
-        $this->rootDir = (string) (realpath($directory) ?: getcwd());
-        if (!$this->isGitRepository()) {
-            fwrite(STDERR, sprintf('Error: Not a git repository: %s%s', $this->rootDir, PHP_EOL));
+        $this->repoMapBuilder = new RepoMapBuilder($directory);
+        $root = $this->repoMapBuilder->getGitRoot();
+        if ($root === null) {
+            fwrite(STDERR, sprintf('Error: Not a git repository: %s%s', $directory, PHP_EOL));
             exit(1);
         }
+        $this->rootDir = $root;
     }
 
     public function run(): void
@@ -77,7 +81,11 @@ class DocStandardsChecker
         echo sprintf('Scanning documentation in: %s%s', $this->rootDir, PHP_EOL);
         echo str_repeat('=', 60) . "\n\n";
 
-        $this->loadGitFiles();
+        $this->files = $this->repoMapBuilder->getAllFiles();
+        $this->markdownFiles = array_filter($this->files, fn (string $file): bool => (bool) preg_match('/\.md$/i', $file));
+
+        echo 'Found ' . count($this->markdownFiles) . " Markdown files\n";
+
         $this->checkRequiredFiles();
         $this->checkFileNaming();
         $this->checkFileEncoding();
@@ -86,27 +94,6 @@ class DocStandardsChecker
         $this->checkDirectoryStructure();
 
         $this->printReport();
-    }
-
-    private function isGitRepository(): bool
-    {
-        return is_dir($this->rootDir . '/.git') ||
-               file_exists($this->rootDir . '/.git');
-    }
-
-    private function loadGitFiles(): void
-    {
-        $command = 'cd ' . escapeshellarg($this->rootDir) . ' && git ls-files';
-        exec($command, $this->files, $returnCode);
-
-        if ($returnCode !== 0) {
-            fwrite(STDERR, "Error: Failed to run git ls-files\n");
-            exit(1);
-        }
-
-        $this->markdownFiles = array_filter($this->files, fn (string $file): bool => (bool) preg_match('/\.md$/i', $file));
-
-        echo 'Found ' . count($this->markdownFiles) . " Markdown files\n";
     }
 
     private function checkRequiredFiles(): void

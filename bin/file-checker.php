@@ -5,6 +5,10 @@
  * Repository Reporter using git ls-files
  */
 
+require __DIR__ . '/../vendor/autoload.php';
+
+use DouglasGreen\PHPProjectChecker\RepoMapBuilder;
+
 // Parse command line arguments
 $fixMode = false;
 foreach ($argv as $arg) {
@@ -14,14 +18,13 @@ foreach ($argv as $arg) {
 }
 
 // 1. Get list of files from git
-$gitOutput = shell_exec('git ls-files 2>/dev/null');
+$repoMapBuilder = new RepoMapBuilder();
+$files = $repoMapBuilder->getAllFiles();
 
-if ($gitOutput === null) {
+if ($files === []) {
     echo "Error: This directory does not appear to be a git repository or git is not installed.\n";
     exit(1);
 }
-
-$files = array_filter(explode("\n", trim($gitOutput)));
 
 // Data structures for reporting
 $phpTopLevelDirs = [];
