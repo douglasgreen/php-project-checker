@@ -1,4 +1,4 @@
-# modified: 2026-03-02
+# modified: 2026-03-05
 
 # This file ignores build directories and project tool directories.
 
@@ -36,7 +36,6 @@ npm-debug.log*
 package-lock.json
 
 # PHPUnit
-.phpunit.cache
 .phpunit.result.cache
 
 # Python
