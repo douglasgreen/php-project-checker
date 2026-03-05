@@ -1,5 +1,5 @@
 {
-  "modified": "2026-03-02",
+  "modified": "2026-03-05",
   "name": "owner/project",
   "description": "***",
   "type": "project",
@@ -17,6 +17,11 @@
   "autoload": {
     "psr-4": {
       "App\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
     }
   },
   "config": {
