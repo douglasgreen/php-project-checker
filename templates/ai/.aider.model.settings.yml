@@ -1,19 +1,6 @@
-# modified: 2026-03-02
+# modified: 2026-03-05
 
 # This file is named .aider.model.settings.yml but is used by its fork, Cecli.
-
-- name: openrouter/moonshotai/kimi-k2.5
-  edit_format: diff
-  use_repo_map: true
-  use_temperature: false
-  streaming: true
-  extra_params:
-    max_tokens: 262144
-    top_p: 0.95
-  accepts_settings:
-    - thinking_tokens
-    - reasoning_effort
-  reasoning_tag: think
 
 - name: openrouter/z-ai/glm-5
   edit_format: diff
@@ -28,13 +15,13 @@
     - reasoning_effort
   reasoning_tag: think
 
-- name: openrouter/minimax/minimax-m2.5
+- name: openrouter/moonshotai/kimi-k2.5
   edit_format: diff
   use_repo_map: true
   use_temperature: false
   streaming: true
   extra_params:
-    max_tokens: 65536
+    max_tokens: 262144
     top_p: 0.95
   accepts_settings:
     - thinking_tokens
