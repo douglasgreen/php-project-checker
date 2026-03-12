@@ -1,4 +1,4 @@
-# modified: 2026-03-02
+# modified: 2026-03-12
 
 tui: false # modern terminal UI with nice keybindings
 agent: false # enable agent mode (more autonomous)
@@ -8,15 +8,5 @@ cache-prompts: true
 use-enhanced-map: true
 watch-files: true
 
-# OpenRouter models
-#
-model: openrouter/moonshotai/kimi-k2.5
-#model: openrouter/z-ai/glm-5
-#model: openrouter/minimax/minimax-m2.5
-#model: openrouter/google/gemini-3-flash-preview
-#model: openrouter/google/gemini-3.1-pro-preview
-
-# ZenMux models
-#
-#model: gemini-3.1-pro-preview
-#model: gemini-3-flash-preview
+# Default model for OpenRouter
+model: openrouter/z-ai/glm-5
