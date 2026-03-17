@@ -1,8 +1,8 @@
-# modified: 2026-03-16
+# modified: 2026-03-17
 
 # This file is named .aider.model.settings.yml but is used by its fork, Cecli.
 
-- name: openrouter/gemini/gemini-3-flash-preview
+- name: openrouter/google/gemini-3-flash-preview
   edit_format: diff-fenced
   use_repo_map: true
   use_temperature: false
@@ -15,7 +15,7 @@
     - reasoning_effort
   reasoning_tag: think
 
-- name: openrouter/gemini/gemini-3.1-pro-preview
+- name: openrouter/google/gemini-3.1-pro-preview
   edit_format: diff-fenced
   use_repo_map: true
   use_temperature: false
