@@ -28,19 +28,6 @@
     - reasoning_effort
   reasoning_tag: think
 
-- name: openrouter/openrouter/hunter-alpha
-  edit_format: diff
-  use_repo_map: true
-  use_temperature: false
-  streaming: true
-  extra_params:
-    max_tokens: 32768
-    top_p: 0.95
-  accepts_settings:
-    - thinking_tokens
-    - reasoning_effort
-  reasoning_tag: think
-
 - name: openrouter/moonshotai/kimi-k2.5
   edit_format: diff
   use_repo_map: true
