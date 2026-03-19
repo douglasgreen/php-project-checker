@@ -1,5 +1,5 @@
 {
-  "modified": "2026-03-05",
+  "modified": "2026-03-19",
   "name": "douglasgreen/php-project-checker",
   "description": "Check PHP project files for conformance with requirements",
   "type": "project",
@@ -8,7 +8,7 @@
     "php": "^8.3"
   },
   "require-dev": {
-    "douglasgreen/php-linter": "^1.2.0",
+    "douglasgreen/php-linter": "^1.3",
     "friendsofphp/php-cs-fixer": "^3.94.2",
     "phpstan/phpstan": "^2.1.40",
     "rector/rector": "^2.3.8"
