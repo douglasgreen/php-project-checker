@@ -1,5 +1,5 @@
 {
-  "modified": "2026-02-26",
+  "modified": "2026-03-19",
   "tabWidth": 4,
   "useTabs": false,
   "semi": true,
@@ -11,10 +11,16 @@
   "endOfLine": "lf",
   "htmlWhitespaceSensitivity": "css",
   "vueIndentScriptAndStyle": false,
-  "plugins": ["prettier-plugin-sh", "prettier-plugin-sql"],
+  "plugins": ["prettier-plugin-sh", "prettier-plugin-sql", "@zackad/prettier-plugin-twig"],
   "overrides": [
     {
       "files": ["*.html", "*.htm"],
+      "options": {
+        "tabWidth": 2
+      }
+    },
+    {
+      "files": ["*.twig"],
       "options": {
         "tabWidth": 2
       }
