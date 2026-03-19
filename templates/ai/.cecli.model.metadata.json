@@ -1,4 +1,14 @@
 {
+  "openrouter/minimax/minimax-m2.7": {
+    "max_tokens": 204800,
+    "max_input_tokens": 204800,
+    "max_output_tokens": 131072,
+    "input_cost_per_token": 0.0000003,
+    "output_cost_per_token": 0.0000012,
+    "mode": "chat",
+    "supports_vision": true,
+    "supports_function_calling": true
+  },
   "openrouter/xiaomi/mimo-v2-pro": {
     "max_tokens": 32000,
     "max_input_tokens": 1000000,
