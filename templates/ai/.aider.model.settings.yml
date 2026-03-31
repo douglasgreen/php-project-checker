@@ -1,4 +1,4 @@
-# modified: 2026-03-19
+# modified: 2026-03-31
 
 # This file is named .aider.model.settings.yml but is used by its fork, Cecli.
 
@@ -67,7 +67,7 @@
     - reasoning_effort
   reasoning_tag: think
 
-- name: openrouter/x-ai/grok-4.20-beta
+- name: openrouter/x-ai/grok-4.20
   edit_format: diff
   use_repo_map: true
   use_temperature: false
@@ -100,6 +100,20 @@
   streaming: true
   extra_params:
     max_tokens: 32768
+    top_p: 0.95
+  accepts_settings:
+    - thinking_tokens
+    - reasoning_effort
+  reasoning_tag: think
+
+# New model added
+- name: openrouter/qwen/qwen3.6-plus-preview:free
+  edit_format: diff
+  use_repo_map: true
+  use_temperature: false
+  streaming: true
+  extra_params:
+    max_tokens: 131072
     top_p: 0.95
   accepts_settings:
     - thinking_tokens
