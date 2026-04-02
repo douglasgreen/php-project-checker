@@ -1,4 +1,4 @@
-# modified: 2026-03-31
+# modified: 2026-04-02
 
 # This file is named .aider.model.settings.yml but is used by its fork, Cecli.
 
@@ -106,8 +106,7 @@
     - reasoning_effort
   reasoning_tag: think
 
-# New model added
-- name: openrouter/qwen/qwen3.6-plus-preview:free
+- name: openrouter/qwen/qwen3.6-plus:free
   edit_format: diff
   use_repo_map: true
   use_temperature: false

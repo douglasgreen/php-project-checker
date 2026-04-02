@@ -9,7 +9,7 @@
     "supports_vision": true,
     "supports_function_calling": true
   },
-  "openrouter/qwen/qwen3.6-plus-preview:free": {
+  "openrouter/qwen/qwen3.6-plus:free": {
     "max_tokens": 1000000,
     "max_input_tokens": 1000000,
     "max_output_tokens": 32768,
