@@ -28,5 +28,15 @@
     "mode": "chat",
     "supports_vision": false,
     "supports_function_calling": true
+  },
+  "openrouter/z-ai/glm-5.1": {
+    "max_tokens": 203000,
+    "max_input_tokens": 203000,
+    "max_output_tokens": 131072,
+    "input_cost_per_token": 0.000001,
+    "output_cost_per_token": 0.0000032,
+    "mode": "chat",
+    "supports_vision": false,
+    "supports_function_calling": true
   }
 }
