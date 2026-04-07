@@ -1,4 +1,4 @@
-# modified: 2026-03-12
+# modified: 2026-04-07
 
 tui: false # modern terminal UI with nice keybindings
 agent: false # enable agent mode (more autonomous)
@@ -9,4 +9,4 @@ use-enhanced-map: true
 watch-files: true
 
 # Default model for OpenRouter
-model: openrouter/z-ai/glm-5
+model: openrouter/z-ai/glm-5.1
