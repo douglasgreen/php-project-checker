@@ -1,5 +1,5 @@
 {
-  "modified": "2026-03-19",
+  "modified": "2026-04-08",
   "name": "owner/project",
   "description": "***",
   "type": "project",
@@ -8,11 +8,11 @@
     "php": "^8.3"
   },
   "require-dev": {
-    "douglasgreen/php-linter": "^1.3.2",
-    "friendsofphp/php-cs-fixer": "^3.94.2",
-    "phpstan/phpstan": "^2.1.42",
-    "phpunit/phpunit": "^12.5.14",
-    "rector/rector": "^2.3.9"
+    "douglasgreen/php-linter": "^1.3",
+    "friendsofphp/php-cs-fixer": "^3.94",
+    "phpstan/phpstan": "^2.1",
+    "phpunit/phpunit": "^12.5",
+    "rector/rector": "^2.4"
   },
   "autoload": {
     "psr-4": {
