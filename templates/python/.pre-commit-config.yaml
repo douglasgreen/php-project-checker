@@ -92,16 +92,6 @@ repos:
       - id: sqlfluff-fix
         args: ["--dialect=ansi"]
 
-  # Twig
-  - repo: local
-    hooks:
-      - id: twig-cs-fixer
-        name: Twig CS Fixer
-        entry: vendor/bin/twig-cs-fixer
-        language: system
-        files: \.twig$
-        args: ["lint"]
-
   # XML/HTML validation
   - repo: local
     hooks:

@@ -55,7 +55,7 @@ $specificFilesToCheck = [
     '.markdownlintignore', '.markdownlint.json', 'package.json', '.php-cs-fixer.php',
     'phpstan.neon.dist', 'phpunit.xml.dist', 'playwright.config.ts', '.prettierignore',
     '.prettierrc.json', 'rector.php', '.shellcheckrc', '.stylelintignore',
-    '.stylelintrc.json', '.twig-cs-fixer.dist.php', '.yamllint.yml'
+    '.stylelintrc.json', '.yamllint.yml'
 ];
 
 /**
@@ -70,7 +70,6 @@ $forbiddenAlternatives = [
     '.stylelintrc.json'       => ['.stylelintrc', '.stylelintrc.js', '.stylelintrc.yml', '.stylelintrc.yaml'],
     '.markdownlint.json'      => ['.markdownlint.yaml', '.markdownlint.yml'],
     '.yamllint.yml'           => ['.yamllint', '.yamllint.yaml'],
-    '.twig-cs-fixer.dist.php' => ['.twig-cs-fixer.php'],
 ];
 
 $foundSpecificFiles = [];
