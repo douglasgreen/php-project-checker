@@ -1,4 +1,4 @@
-# modified: 2026-04-10
+# modified: 2026-04-11
 
 # This file is named .aider.model.settings.yml but is used by its fork, Cecli.
 
@@ -118,6 +118,9 @@
     - thinking_tokens
     - reasoning_effort
   reasoning_tag: think
+  extra_body:
+    provider:
+      order: ["Friendli", "io.net"]
 
 - name: openrouter/qwen/qwen3.6-plus
   edit_format: diff
