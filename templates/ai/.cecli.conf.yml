@@ -1,7 +1,7 @@
 # modified: 2026-04-14
 
 tui: false # Disables the Terminal User Interface; uses standard command-line output instead
-agent: true # Enables autonomous agent mode for multi-step task execution
+agent: false # Enables autonomous agent mode for multi-step task execution
 auto-commits: true # Automatically creates git commits after the agent modifies files
 auto-save: true # Automatically saves file changes to disk without manual intervention
 cache-prompts: true # Enables prompt caching to improve performance and reduce latency/costs
@@ -10,45 +10,3 @@ watch-files: true # Monitors files for external changes to keep the agent's cont
 
 # Default model for OpenRouter
 model: openrouter/z-ai/glm-5.1 # Specifies the LLM provider and model ID to be used
-
-# Global setting to automatically bypass confirmation prompts
-yes-always: true # Automatically answers 'yes' to all global CLI confirmation prompts
-
-# Agent Mode configuration (Skills and Tools)
-agent-config:
-  skip_cli_confirmations: true # Prevents the agent from asking permission before running each tool
-  hot_reload: true # Enables the agent to detect and use new or modified skills immediately
-  large_file_token_threshold: 8192 # Sets the limit (in tokens) before a file is considered too large for full context
-
-  skills_paths: # Defines the directories the agent searches for custom skill definitions
-    - "~/skills" # Local path to user-defined agent skills
-
-  # @see https://github.com/cecli-dev/cecli/blob/main/cecli/website/docs/config/agent-mode.md
-  skills_includelist: # Explicitly enables only the following tools for the agent
-    - "ViewFilesMatching" # Skill to find files based on pattern matching
-    - "ViewFilesWithSymbol" # Skill to locate files containing specific code symbols (classes/functions)
-    - "Ls" # Skill to list files and directories
-    - "Grep" # Skill to search for string patterns within files
-    - "ReplaceText" # Skill to find and replace specific text blocks in files
-    - "InsertText" # Skill to add new text at specific locations in files
-    - "DeleteText" # Skill to remove specific lines or blocks of text
-    - "ContextManager" # Skill to manage what information is kept in the LLM's active memory
-    - "UpdateTodoList" # Skill to maintain a checklist of tasks during a session
-    - "ListChanges" # Skill to review modifications made during the current session
-    - "UndoChange" # Skill to revert the last file modification
-    - "Finished" # Skill used by the agent to signal task completion
-    - "LoadSkill" # Skill to dynamically import new capabilities at runtime
-    - "RemoveSkill" # Skill to dynamically disable capabilities at runtime
-
-  skills_excludelist: # Explicitly forbids the agent from using these specific tools
-    - "GitDiff" # Blocks the agent from viewing git differences
-    - "GitLog" # Blocks the agent from viewing git commit history
-    - "GitShow" # Blocks the agent from viewing specific git objects
-    - "GitStatus" # Blocks the agent from checking the current git repository state
-
-  # Connect external tools via Model Context Protocol (MCP)
-  # mcp-servers:
-  #   mcpServers:
-  #     example-server:
-  #       transport: http
-  #       url: https://mcp.your-server.com/mcp
