@@ -1,4 +1,4 @@
-# modified: 2026-04-15
+# modified: 2026-04-16
 
 tui: false # Disables the Terminal User Interface; uses standard command-line output instead
 agent: false # Enables autonomous agent mode for multi-step task execution
@@ -7,7 +7,7 @@ auto-save: true # Automatically saves file changes to disk without manual interv
 cache-prompts: true # Enables prompt caching to improve performance and reduce latency/costs
 use-enhanced-map: true # Uses a more detailed repository map to help the AI understand code structure
 watch-files: true # Monitors files for external changes to keep the agent's context synchronized
-reasoning-effort: high # Set the level of reasoning for models that support reasoning
+reasoning-effort: medium # Set the level of reasoning for models that support reasoning
 detect-urls: false # Enable/disable detection and offering to add URLs to chat
 
 # Default model for OpenRouter
