@@ -1,5 +1,3 @@
-// modified: 2026-02-26
-
 import { defineConfig } from 'vitest/config';
 import vue from '@vitejs/plugin-vue';
 import { resolve } from 'path';

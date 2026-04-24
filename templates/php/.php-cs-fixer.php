@@ -1,5 +1,4 @@
 <?php
-// modified: 2026-02-26
 
 use PhpCsFixer\Runner\Parallel\ParallelConfigFactory;
 use PhpCsFixer\Config;

@@ -1,5 +1,3 @@
-// modified: 2026-02-26
-
 import pluginVue from 'eslint-plugin-vue';
 import vueParser from 'vue-eslint-parser';
 import tseslint from 'typescript-eslint';

@@ -1,5 +1,4 @@
 {
-  "modified": "2026-02-26",
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",

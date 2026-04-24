@@ -1,5 +1,3 @@
-// modified: 2026-02-26
-
 import js from '@eslint/js';
 import pluginSecurity from 'eslint-plugin-security';
 import pluginUnicorn from 'eslint-plugin-unicorn';

@@ -1,5 +1,4 @@
 {
-  "modified": "2026-02-26",
   "extends": ["stylelint-config-standard"],
   "rules": {
     "color-hex-length": "short",

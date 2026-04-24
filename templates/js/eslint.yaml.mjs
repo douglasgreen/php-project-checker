@@ -1,5 +1,3 @@
-// modified: 2026-02-26
-
 import pluginYaml from 'eslint-plugin-yml';
 import * as yamlParser from 'yaml-eslint-parser';
 

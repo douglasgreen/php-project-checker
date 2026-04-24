@@ -1,5 +1,3 @@
-// modified: 2026-02-26
-
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
