@@ -1,4 +1,14 @@
 {
+  "openrouter/deepseek/deepseek-v4-pro": {
+    "max_tokens": 1048576,
+    "max_input_tokens": 1048576,
+    "max_output_tokens": 384000,
+    "input_cost_per_token": 0.00000174,
+    "output_cost_per_token": 0.00000348,
+    "mode": "chat",
+    "supports_vision": false,
+    "supports_function_calling": true
+  },
   "openrouter/minimax/minimax-m2.7": {
     "max_tokens": 204800,
     "max_input_tokens": 204800,
