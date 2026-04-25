@@ -1,3 +1,5 @@
+# modified: 2026-04-16
+
 tui: false # Disables the Terminal User Interface; uses standard command-line output instead
 agent: false # Enables autonomous agent mode for multi-step task execution
 auto-commits: true # Automatically creates git commits after the agent modifies files
@@ -9,4 +11,4 @@ reasoning-effort: medium # Set the level of reasoning for models that support re
 detect-urls: false # Enable/disable detection and offering to add URLs to chat
 
 # Default model for OpenRouter
-model: openrouter/deepseek/deepseek-v4-pro # Specifies the LLM provider and model ID to be used
+model: openrouter/xiaomi/mimo-v2.5-pro # Specifies the LLM provider and model ID to be used
