@@ -135,8 +135,8 @@
     extra_body:
       provider:
         order:
+          - Together
           - Friendli
-          - io.net
         allow_fallbacks: false
 
 - name: openrouter/qwen/qwen3.6-plus
