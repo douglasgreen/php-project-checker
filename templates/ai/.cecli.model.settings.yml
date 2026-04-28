@@ -49,6 +49,11 @@
     temperature: 0
     max_tokens: 65536
     top_p: 0.95
+    extra_body:
+      provider:
+        order:
+          - DeepSeek
+        allow_fallbacks: false
 
 - name: openrouter/minimax/minimax-m2.7
   edit_format: diff
@@ -132,6 +137,7 @@
         order:
           - Friendli
           - io.net
+        allow_fallbacks: false
 
 - name: openrouter/qwen/qwen3.6-plus
   edit_format: diff
