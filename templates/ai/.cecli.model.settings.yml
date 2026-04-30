@@ -83,7 +83,7 @@
     extra_body:
       provider:
         order:
-          - io.net
+          - io-net
         allow_fallbacks: false
 
 - name: openrouter/openai/gpt-5.4
