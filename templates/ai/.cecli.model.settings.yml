@@ -21,7 +21,7 @@
     - reasoning_effort
   extra_params:
     temperature: 0
-    max_tokens: 32768
+    max_tokens: 65536
     top_p: 0.95
 
 - name: openrouter/google/gemini-3.1-pro-preview
@@ -34,7 +34,7 @@
     - reasoning_effort
   extra_params:
     temperature: 0
-    max_tokens: 32768
+    max_tokens: 65536
     top_p: 0.95
 
 - name: openrouter/deepseek/deepseek-v4-pro
