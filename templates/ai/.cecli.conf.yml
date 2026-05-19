@@ -1,5 +1,3 @@
-# modified: 2026-04-16
-
 tui: false # Disables the Terminal User Interface; uses standard command-line output instead
 agent: false # Enables autonomous agent mode for multi-step task execution
 auto-commits: true # Automatically creates git commits after the agent modifies files
