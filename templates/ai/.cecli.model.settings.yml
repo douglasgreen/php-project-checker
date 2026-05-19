@@ -5,11 +5,9 @@
   reasoning_tag: think
   accepts_settings:
     - thinking_tokens
-    - reasoning_effort
   extra_params:
     temperature: 0
-    max_tokens: 131072
-    top_p: 0.95
+    max_tokens: 128000
 
 - name: openrouter/google/gemini-3-flash-preview
   edit_format: diff-fenced
