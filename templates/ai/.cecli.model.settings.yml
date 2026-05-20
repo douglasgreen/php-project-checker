@@ -66,6 +66,15 @@
           - DeepSeek
         allow_fallbacks: false
 
+- name: openrouter/deepseek/deepseek-v4-flash:free
+  edit_format: diff
+  use_repo_map: true
+  streaming: true
+  reasoning_tag: think
+  accepts_settings:
+    - thinking_tokens
+    - reasoning_effort
+
 - name: openrouter/minimax/minimax-m2.7
   edit_format: diff
   use_repo_map: true
