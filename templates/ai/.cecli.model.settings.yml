@@ -9,19 +9,6 @@
     temperature: 0
     max_tokens: 128000
 
-- name: openrouter/arcee-ai/trinity-large-thinking:free
-  edit_format: diff
-  use_repo_map: true
-  streaming: true
-  reasoning_tag: think
-  accepts_settings:
-    - thinking_tokens
-    - reasoning_effort
-  extra_params:
-    temperature: 0
-    max_tokens: 65536
-    top_p: 0.95
-
 - name: openrouter/deepseek/deepseek-v4-flash:free
   edit_format: diff
   use_repo_map: true
@@ -77,19 +64,6 @@
 
 - name: openrouter/google/gemini-3.5-flash
   edit_format: diff-fenced
-  use_repo_map: true
-  streaming: true
-  reasoning_tag: think
-  accepts_settings:
-    - thinking_tokens
-    - reasoning_effort
-  extra_params:
-    temperature: 0
-    max_tokens: 65536
-    top_p: 0.95
-
-- name: openrouter/minimax/minimax-m2.7
-  edit_format: diff
   use_repo_map: true
   streaming: true
   reasoning_tag: think
