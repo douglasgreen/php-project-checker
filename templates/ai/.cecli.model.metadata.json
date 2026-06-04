@@ -29,6 +29,16 @@
     "supports_vision": true,
     "supports_function_calling": true
   },
+  "openrouter/minimax/minimax-m3": {
+    "max_tokens": 1048576,
+    "max_input_tokens": 1048576,
+    "max_output_tokens": 512000,
+    "input_cost_per_token": 0.0000006,
+    "output_cost_per_token": 0.0000024,
+    "mode": "chat",
+    "supports_vision": true,
+    "supports_function_calling": true
+  },
   "openrouter/moonshotai/kimi-k2.6": {
     "max_tokens": 262144,
     "max_input_tokens": 262144,

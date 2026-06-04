@@ -75,6 +75,19 @@
     max_tokens: 65536
     top_p: 0.95
 
+- name: openrouter/minimax/minimax-m3
+  edit_format: diff
+  use_repo_map: true
+  streaming: true
+  reasoning_tag: think
+  accepts_settings:
+    - thinking_tokens
+    - reasoning_effort
+  extra_params:
+    temperature: 0
+    max_tokens: 65536
+    top_p: 0.95
+
 - name: openrouter/moonshotai/kimi-k2.6
   edit_format: diff
   use_repo_map: true
