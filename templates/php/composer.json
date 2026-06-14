@@ -11,7 +11,8 @@
     "friendsofphp/php-cs-fixer": "^3.95",
     "phpstan/phpstan": "^2.2",
     "phpunit/phpunit": "^13.1",
-    "rector/rector": "^2.4"
+    "rector/rector": "^2.4",
+    "shipmonk/dead-code-detector": "^1.2"
   },
   "autoload": {
     "psr-4": {
