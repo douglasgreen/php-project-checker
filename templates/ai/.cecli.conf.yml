@@ -1,6 +1,6 @@
 tui: false # Disables the Terminal User Interface; uses standard command-line output instead
 agent: false # Enables autonomous agent mode for multi-step task execution
-auto-commits: true # Automatically creates git commits after the agent modifies files
+auto-commits: false # Automatically creates git commits after the agent modifies files
 auto-save: true # Automatically saves file changes to disk without manual intervention
 cache-prompts: true # Enables prompt caching to improve performance and reduce latency/costs
 use-enhanced-map: true # Uses a more detailed repository map to help the AI understand code structure
