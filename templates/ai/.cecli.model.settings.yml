@@ -205,7 +205,7 @@
     max_tokens: 65536
     top_p: 0.95
 
-- name: openrouter/z-ai/glm-5.1
+- name: openrouter/z-ai/glm-5.2
   edit_format: diff
   use_repo_map: true
   streaming: true
