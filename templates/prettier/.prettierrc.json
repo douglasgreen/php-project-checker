@@ -13,19 +13,20 @@
   "plugins": ["prettier-plugin-sh", "prettier-plugin-sql", "@zackad/prettier-plugin-twig"],
   "overrides": [
     {
-      "files": ["*.html", "*.htm"],
+      "files": ["**/*.html", "**/*.htm"],
       "options": {
         "tabWidth": 2
       }
     },
     {
-      "files": ["*.twig"],
+      "files": ["**/*.twig"],
       "options": {
+        "parser": "twig",
         "tabWidth": 2
       }
     },
     {
-      "files": "*.md",
+      "files": "**/*.md",
       "options": {
         "tabWidth": 2,
         "printWidth": 100,
@@ -33,26 +34,26 @@
       }
     },
     {
-      "files": "*.json",
+      "files": "**/*.json",
       "options": {
         "tabWidth": 2
       }
     },
     {
-      "files": ["*.yml", "*.yaml"],
+      "files": ["**/*.yml", "**/*.yaml"],
       "options": {
         "tabWidth": 2,
         "singleQuote": false
       }
     },
     {
-      "files": "*.sh",
+      "files": "**/*.sh",
       "options": {
         "parser": "sh"
       }
     },
     {
-      "files": "*.sql",
+      "files": "**/*.sql",
       "options": {
         "parser": "sql",
         "language": "mysql",
