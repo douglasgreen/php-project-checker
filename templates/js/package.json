@@ -4,7 +4,7 @@
   "description": "***",
   "type": "module",
   "scripts": {
-    "lint": "npm run lint:js && npm run lint:css && npm run lint:md && npm run lint:sh",
+    "lint": "npm run lint:js && npm run lint:css && npm run lint:md && npm run lint:sh && prettier --check .",
     "lint:js": "eslint . --ext .js,.ts,.vue,.yml,.yaml",
     "lint:css": "stylelint '**/*.css'",
     "lint:md": "markdownlint '**/*.md'",
