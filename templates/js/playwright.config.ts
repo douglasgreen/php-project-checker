@@ -57,12 +57,10 @@ export default defineConfig({
         },
     ],
 
-    webServer: isCI
-        ? undefined
-        : {
-              command: 'npm run dev',
-              url: 'http://localhost:3000',
-              reuseExistingServer: true,
-              timeout: 120_000,
-          },
+    webServer: {
+        command: 'npm run dev',
+        url: 'http://localhost:3000',
+        reuseExistingServer: !isCI,
+        timeout: 120_000,
+    },
 });

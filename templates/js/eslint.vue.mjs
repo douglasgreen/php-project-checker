@@ -9,8 +9,8 @@ export default [
         languageOptions: {
             parser: vueParser,
             parserOptions: {
-                parser: tseslint.parser, // TS parser inside .vue
-                project: true,
+                parser: tseslint.parser,
+                projectService: true,
                 tsconfigRootDir: import.meta.dirname,
                 extraFileExtensions: ['.vue'],
             },

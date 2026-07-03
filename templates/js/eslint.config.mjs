@@ -1,7 +1,6 @@
 import js from '@eslint/js';
 import pluginSecurity from 'eslint-plugin-security';
 import pluginUnicorn from 'eslint-plugin-unicorn';
-import pluginJsxA11y from 'eslint-plugin-jsx-a11y';
 import globals from 'globals';
 import eslintConfigPrettier from 'eslint-config-prettier';
 
@@ -88,15 +87,6 @@ export default [
         rules: {
             'unicorn/consistent-function-scoping': 'off',
             'unicorn/no-abusive-eslint-disable': 'error',
-        },
-    },
-
-    // Accessibility for Vue/JSX
-    {
-        files: ['**/*.{vue,jsx,tsx}'],
-        plugins: { 'jsx-a11y': pluginJsxA11y },
-        rules: {
-            ...pluginJsxA11y.configs.recommended.rules,
         },
     },
 

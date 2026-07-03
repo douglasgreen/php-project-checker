@@ -97,7 +97,9 @@ export default defineConfig({
 
     resolve: {
         alias: {
-            '@': resolve(__dirname, './src'),
+            '@': resolve(import.meta.dirname, './src'),
+            '@components': resolve(import.meta.dirname, './src/components'),
+            '@utils': resolve(import.meta.dirname, './src/utils'),
         },
     },
 
