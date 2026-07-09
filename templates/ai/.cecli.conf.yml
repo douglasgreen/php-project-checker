@@ -9,4 +9,4 @@ reasoning-effort: high # Set the level of reasoning for models that support reas
 detect-urls: false # Enable/disable detection and offering to add URLs to chat
 
 # Default model for OpenRouter
-model: openrouter/z-ai/glm-5.2 # Specifies the LLM provider and model ID to be used
+model: openrouter/x-ai/grok-4.5 # Specifies the LLM provider and model ID to be used
