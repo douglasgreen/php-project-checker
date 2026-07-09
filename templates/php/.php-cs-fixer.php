@@ -18,8 +18,8 @@ $finder = Finder::create()
 
 return (new Config())
     ->setRules([
-        // PSR-12 Base
-        '@PSR12' => true,
+        // PER-CS Base (Tracks the latest available PER revision, e.g., v3.x)
+        '@PER-CS' => true,
 
         // Strict Type Safety
         'nullable_type_declaration_for_default_null_value' => true,
