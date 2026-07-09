@@ -9,18 +9,14 @@ use RecursiveIteratorIterator;
 
 class RepoMapBuilder
 {
-    private ?string $gitRoot;
+    private readonly ?string $gitRoot;
 
     /** @var array<int, string>|null */
     private ?array $files = null;
 
     public function __construct(?string $gitRoot = null)
     {
-        if ($gitRoot !== null) {
-            $this->gitRoot = $gitRoot;
-        } else {
-            $this->gitRoot = $this->findGitRoot();
-        }
+        $this->gitRoot = $gitRoot ?? $this->findGitRoot();
     }
 
     public function getGitRoot(): ?string
@@ -85,16 +81,15 @@ class RepoMapBuilder
                 if (file_exists($fullPath)) {
                     $phpFiles[] = $fullPath;
                 }
+
                 continue;
             }
 
             // Check for extensionless PHP files
             $basename = basename($file);
             // Check if it has no extension (no dot in basename)
-            if (strpos($basename, '.') === false) {
-                if ($this->isPhpShebang($fullPath)) {
-                    $phpFiles[] = $fullPath;
-                }
+            if (strpos($basename, '.') === false && $this->isPhpShebang($fullPath)) {
+                $phpFiles[] = $fullPath;
             }
         }
 

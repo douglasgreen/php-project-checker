@@ -170,7 +170,7 @@ class GitLabCiChecker
         }
 
         // Fallback to Symfony YAML if available
-        if (class_exists('Symfony\Component\Yaml\Yaml')) {
+        if (class_exists(Yaml::class)) {
             try {
                 return Yaml::parse($content);
             } catch (Exception) {
@@ -266,7 +266,7 @@ class GitLabCiChecker
         // Check for circular includes (1.1.3) - simplified check
         $includePaths = [];
         foreach (array_keys($this->includedFiles) as $path) {
-            if (in_array($path, $includePaths)) {
+            if (in_array($path, $includePaths, true)) {
                 $this->addIssue(
                     self::MUST,
                     'Circular include',
@@ -863,8 +863,8 @@ class GitLabCiChecker
                             }
 
                             // Check if protected environment is configured (can't fully validate from file alone)
-                            if (!isset($job['config']['environment']['deployment_tier']) ||
-                                $job['config']['environment']['deployment_tier'] !== 'production') {
+                            if (!isset($job['config']['environment']['deployment_tier'])
+                                || $job['config']['environment']['deployment_tier'] !== 'production') {
                                 $this->addIssue(
                                     self::SHOULD,
                                     'Production tier',
@@ -877,8 +877,8 @@ class GitLabCiChecker
                 }
 
                 // Check for manual gate (7.7)
-                if (str_contains(strtolower((string) $name), 'prod') &&
-                    (!isset($job['config']['rules']) || !preg_match('/when:\s*manual/i', (string) json_encode($job['config'])))) {
+                if (str_contains(strtolower((string) $name), 'prod')
+                    && (!isset($job['config']['rules']) || !preg_match('/when:\s*manual/i', (string) json_encode($job['config'])))) {
                     $this->addIssue(
                         self::SHOULD,
                         'Missing manual gate',
@@ -1031,9 +1031,9 @@ class GitLabCiChecker
 
     private function printReport(): void
     {
-        $mustIssues = array_filter($this->issues, fn (array $i): bool => $i['level'] === self::MUST);
-        $shouldIssues = array_filter($this->issues, fn (array $i): bool => $i['level'] === self::SHOULD);
-        $mayIssues = array_filter($this->issues, fn (array $i): bool => $i['level'] === self::MAY);
+        $mustIssues = array_filter($this->issues, fn(array $i): bool => $i['level'] === self::MUST);
+        $shouldIssues = array_filter($this->issues, fn(array $i): bool => $i['level'] === self::SHOULD);
+        $mayIssues = array_filter($this->issues, fn(array $i): bool => $i['level'] === self::MAY);
 
         echo "\n" . str_repeat('=', 60) . "\n";
         echo "GitLab CI/CD Standards Compliance Report\n";
