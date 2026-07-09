@@ -1,8 +1,8 @@
 <?php
 
-use PhpCsFixer\Runner\Parallel\ParallelConfigFactory;
 use PhpCsFixer\Config;
 use PhpCsFixer\Finder;
+use PhpCsFixer\Runner\Parallel\ParallelConfigFactory;
 
 $finder = Finder::create()
     ->in([
@@ -128,6 +128,9 @@ return (new Config())
         'binary_operator_spaces' => [
             'default' => 'single_space',
             'operators' => ['=>' => 'single_space'],
+        ],
+        'class_definition' => [
+            'space_before_parenthesis' => false,
         ],
         'concat_space' => ['spacing' => 'one'],
         'cast_spaces' => ['space' => 'single'],
