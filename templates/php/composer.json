@@ -34,11 +34,12 @@
     "lint": [
       "php-linter",
       "php-cs-fixer fix --dry-run --verbose",
-      "phpstan analyse",
-      "rector process --dry-run"
+      "phpstan analyse"
     ],
     "lint:fix": [
-      "php-cs-fixer fix",
+      "php-cs-fixer fix"
+    ],
+    "lint:upgrade": [
       "rector process"
     ],
     "test": [
