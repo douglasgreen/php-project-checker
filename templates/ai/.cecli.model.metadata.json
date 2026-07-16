@@ -29,22 +29,12 @@
     "supports_vision": true,
     "supports_function_calling": true
   },
-  "openrouter/moonshotai/kimi-k2.6": {
-    "max_tokens": 262144,
-    "max_input_tokens": 262144,
-    "max_output_tokens": 262144,
-    "input_cost_per_token": 0.00000073,
-    "output_cost_per_token": 0.00000349,
-    "mode": "chat",
-    "supports_vision": true,
-    "supports_function_calling": true
-  },
-  "openrouter/moonshotai/kimi-k2.7-code": {
-    "max_tokens": 262144,
-    "max_input_tokens": 262144,
-    "max_output_tokens": 262144,
-    "input_cost_per_token": 0.00000095,
-    "output_cost_per_token": 0.000004,
+  "openrouter/moonshotai/kimi-k3": {
+    "max_tokens": 1000000,
+    "max_input_tokens": 1000000,
+    "max_output_tokens": 1000000,
+    "input_cost_per_token": 0.000003,
+    "output_cost_per_token": 0.000015,
     "mode": "chat",
     "supports_vision": true,
     "supports_function_calling": true
