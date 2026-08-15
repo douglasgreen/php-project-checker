@@ -15,10 +15,8 @@ parameters:
     - var
     - vendor
 
-  # Framework extensions (uncomment as needed)
-  # symfony:
-  #   container_xml_path: var/cache/dev/App_KernelDevDebugContainer.xml
+  symfony:
+    container_xml_path: var/cache/dev/App_KernelDevDebugContainer.xml
 
-  # Doctrine extension (uncomment as needed)
-  # doctrine:
-  #   objectManagerLoader: tests/object-manager.php
+  doctrine:
+    objectManagerLoader: tests/object-manager.php

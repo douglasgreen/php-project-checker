@@ -32,11 +32,15 @@
   },
   "scripts": {
     "lint": [
+      "mago lint",
+      "mago analyze",
+      "mago guard",
       "php-linter",
-      "php-cs-fixer fix --dry-run --verbose",
       "phpstan analyse"
     ],
     "lint:fix": [
+      "mago format",
+      "mago lint --fix",
       "php-cs-fixer fix"
     ],
     "lint:upgrade": [
