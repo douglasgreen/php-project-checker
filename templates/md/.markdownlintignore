@@ -2,9 +2,6 @@
 
 # Project-specific settings (put your files here)
 
-# AI
-.cecli*
-
 # Build directories
 build/
 .cache/
