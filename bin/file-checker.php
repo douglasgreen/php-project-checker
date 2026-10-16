@@ -12,9 +12,11 @@ use DouglasGreen\PHPProjectChecker\RepoMapBuilder;
 // Parse command line arguments
 $fixMode = false;
 foreach ($argv as $arg) {
-    if ($arg === '--fix') {
-        $fixMode = true;
+    if ($arg !== '--fix') {
+        continue;
     }
+
+    $fixMode = true;
 }
 
 // 1. Get list of files from git
@@ -170,9 +172,11 @@ foreach ($files as $file) {
 
         // 5. Forbidden Alternatives
         foreach ($forbiddenAlternatives as $preferred => $alternatives) {
-            if (in_array($file, $alternatives)) {
-                $foundForbiddenFiles[$preferred][] = $file;
+            if (!in_array($file, $alternatives)) {
+                continue;
             }
+
+            $foundForbiddenFiles[$preferred][] = $file;
         }
     }
 }
@@ -204,10 +208,12 @@ echo '   - Files in tests/ directory: ' . ($hasTestsDirFiles ? 'Yes' : 'No') . "
 echo "\n3. File Type Counts:\n";
 $hasAnyFiles = false;
 foreach ($extensionCounts as $type => $count) {
-    if ($count > 0) {
-        $hasAnyFiles = true;
-        printf("   - %-10s : %d\n", $type, $count);
+    if ($count <= 0) {
+        continue;
     }
+
+    $hasAnyFiles = true;
+    printf("   - %-10s : %d\n", $type, $count);
 }
 if (!$hasAnyFiles) {
     echo "   - None found.\n";
@@ -227,11 +233,13 @@ if ($foundSpecificFiles !== []) {
 echo "\n5. Non-preferred Alternative Files (Should NOT exist):\n";
 $anyForbiddenFound = false;
 foreach (array_keys($forbiddenAlternatives) as $preferred) {
-    if (!empty($foundForbiddenFiles[$preferred])) {
-        $anyForbiddenFound = true;
-        foreach ($foundForbiddenFiles[$preferred] as $badFile) {
-            echo "   - [!] Found: {$badFile} (Conflict with preferred: {$preferred})\n";
-        }
+    if (empty($foundForbiddenFiles[$preferred])) {
+        continue;
+    }
+
+    $anyForbiddenFound = true;
+    foreach ($foundForbiddenFiles[$preferred] as $badFile) {
+        echo "   - [!] Found: {$badFile} (Conflict with preferred: {$preferred})\n";
     }
 }
 
@@ -291,7 +299,7 @@ if ($fixMode) {
             return;
         }
 
-        if (!is_dir($targetPath) && !mkdir($targetPath, 0755, true)) {
+        if (!is_dir($targetPath) && !mkdir($targetPath, 0o755, true)) {
             $errors[] = 'Failed to create directory: ' . $targetPath;
             return;
         }
@@ -334,7 +342,7 @@ if ($fixMode) {
         if (is_file($sourcePath)) {
             $targetDirForFile = dirname($targetPath);
             if (!is_dir($targetDirForFile)) {
-                mkdir($targetDirForFile, 0755, true);
+                mkdir($targetDirForFile, 0o755, true);
             }
             if (copy($sourcePath, $targetPath)) {
                 $copiedFiles[] = basename($templateFile);
@@ -347,43 +355,45 @@ if ($fixMode) {
 
     // Copy conditional templates based on file type counts
     foreach ($conditionalTemplates as $fileType => $templateDirs) {
-        if ($extensionCounts[$fileType] > 0) {
-            foreach ($templateDirs as $templateDir) {
-                $sourcePath = $sourceTemplatesDir . '/' . $templateDir;
-                $targetPath = $targetDir;
-                // Skip js/package.json if already copied
-                if ($templateDir === 'js') {
-                    echo "Copying templates/{$templateDir}/* (excluding package.json if exists)...\n";
-                    if (is_dir($sourcePath)) {
-                        $items = scandir($sourcePath);
-                        foreach ($items as $item) {
-                            if ($item === '.') {
-                                continue;
-                            }
-                            if ($item === '..') {
-                                continue;
-                            }
-                            // Skip package.json as it's handled separately
-                            if ($item === 'package.json') {
-                                continue;
-                            }
-                            $sourceItem = $sourcePath . '/' . $item;
-                            $targetItem = $targetPath . '/' . $item;
-                            if (is_dir($sourceItem)) {
-                                $copyDirectory($sourceItem, $targetItem, $copiedFiles, $errors);
-                            } elseif (is_file($sourceItem)) {
-                                if (copy($sourceItem, $targetItem)) {
-                                    $copiedFiles[] = $item;
-                                } else {
-                                    $errors[] = sprintf('Failed to copy: %s -> %s', $sourceItem, $targetItem);
-                                }
+        if ($extensionCounts[$fileType] <= 0) {
+            continue;
+        }
+
+        foreach ($templateDirs as $templateDir) {
+            $sourcePath = $sourceTemplatesDir . '/' . $templateDir;
+            $targetPath = $targetDir;
+            // Skip js/package.json if already copied
+            if ($templateDir === 'js') {
+                echo "Copying templates/{$templateDir}/* (excluding package.json if exists)...\n";
+                if (is_dir($sourcePath)) {
+                    $items = scandir($sourcePath);
+                    foreach ($items as $item) {
+                        if ($item === '.') {
+                            continue;
+                        }
+                        if ($item === '..') {
+                            continue;
+                        }
+                        // Skip package.json as it's handled separately
+                        if ($item === 'package.json') {
+                            continue;
+                        }
+                        $sourceItem = $sourcePath . '/' . $item;
+                        $targetItem = $targetPath . '/' . $item;
+                        if (is_dir($sourceItem)) {
+                            $copyDirectory($sourceItem, $targetItem, $copiedFiles, $errors);
+                        } elseif (is_file($sourceItem)) {
+                            if (copy($sourceItem, $targetItem)) {
+                                $copiedFiles[] = $item;
+                            } else {
+                                $errors[] = sprintf('Failed to copy: %s -> %s', $sourceItem, $targetItem);
                             }
                         }
                     }
-                } else {
-                    echo "Copying templates/{$templateDir}/* ...\n";
-                    $copyDirectory($sourcePath, $targetPath, $copiedFiles, $errors);
                 }
+            } else {
+                echo "Copying templates/{$templateDir}/* ...\n";
+                $copyDirectory($sourcePath, $targetPath, $copiedFiles, $errors);
             }
         }
     }

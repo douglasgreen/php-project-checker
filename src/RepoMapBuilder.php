@@ -152,14 +152,16 @@ class RepoMapBuilder
         );
 
         foreach ($iterator as $file) {
-            if ($file->isFile()) {
-                $path = $file->getPathname();
-                // Skip vendor and common excluded directories
-                if (!preg_match('#/(vendor|node_modules|\.git)/#', (string) $path)) {
-                    // Return relative paths to match git ls-files behavior
-                    $relativePath = str_replace($this->gitRoot . '/', '', $path);
-                    $files[] = $relativePath;
-                }
+            if (!$file->isFile()) {
+                continue;
+            }
+
+            $path = $file->getPathname();
+            // Skip vendor and common excluded directories
+            if (!preg_match('#/(vendor|node_modules|\.git)/#', (string) $path)) {
+                // Return relative paths to match git ls-files behavior
+                $relativePath = str_replace($this->gitRoot . '/', '', $path);
+                $files[] = $relativePath;
             }
         }
     }

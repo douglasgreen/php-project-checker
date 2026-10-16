@@ -276,9 +276,11 @@ class GitLabCiChecker
         // Check organization by stage (1.1.4)
         $hasOrganizedIncludes = false;
         foreach (array_keys($this->includedFiles) as $path) {
-            if (preg_match('/\.gitlab\/ci\/(build|test|deploy|lint|security)\.yml$/', $path) === 1) {
-                $hasOrganizedIncludes = true;
+            if (preg_match('/\.gitlab\/ci\/(build|test|deploy|lint|security)\.yml$/', $path) !== 1) {
+                continue;
             }
+
+            $hasOrganizedIncludes = true;
         }
 
         if ($this->includedFiles !== [] && !$hasOrganizedIncludes) {
@@ -303,14 +305,16 @@ class GitLabCiChecker
         // Check line length (2.4)
         $lines = explode("\n", $content);
         foreach ($lines as $i => $line) {
-            if (strlen($line) > $this->config['maxLineLength'] && !str_starts_with(trim($line), '#')) {
-                $this->addIssue(
-                    self::SHOULD,
-                    'Line too long',
-                    '.gitlab-ci.yml:' . ($i + 1),
-                    sprintf('Line exceeds %s characters per 2.4', $this->config['maxLineLength']),
-                );
+            if (!(strlen($line) > $this->config['maxLineLength'] && !str_starts_with(trim($line), '#'))) {
+                continue;
             }
+
+            $this->addIssue(
+                self::SHOULD,
+                'Line too long',
+                '.gitlab-ci.yml:' . ($i + 1),
+                sprintf('Line exceeds %s characters per 2.4', $this->config['maxLineLength']),
+            );
         }
 
         // Check for block scalars usage (2.3)
@@ -552,14 +556,16 @@ class GitLabCiChecker
 
             // Check for deprecated composer flags
             foreach ($this->deprecatedComposerFlags as $flag) {
-                if (str_contains($scriptText, (string) $flag)) {
-                    $this->addIssue(
-                        self::MUST,
-                        'Deprecated flag',
-                        $name . ': script',
-                        sprintf("Remove deprecated '%s' from composer commands per user requirements", $flag),
-                    );
+                if (!str_contains($scriptText, (string) $flag)) {
+                    continue;
                 }
+
+                $this->addIssue(
+                    self::MUST,
+                    'Deprecated flag',
+                    $name . ': script',
+                    sprintf("Remove deprecated '%s' from composer commands per user requirements", $flag),
+                );
             }
 
             // Check for error handling (4.3)
@@ -614,10 +620,12 @@ class GitLabCiChecker
                         $lockfiles = ['composer.lock', 'package-lock.json', 'yarn.lock', 'go.sum'];
                         $hasLockfile = false;
                         foreach ($lockfiles as $lock) {
-                            if (in_array($lock, (array) $files)) {
-                                $hasLockfile = true;
-                                break;
+                            if (!in_array($lock, (array) $files)) {
+                                continue;
                             }
+
+                            $hasLockfile = true;
+                            break;
                         }
 
                         if (!$hasLockfile) {
@@ -680,14 +688,16 @@ class GitLabCiChecker
             $sensitivePatterns = ['.env', 'config.php', 'secrets', 'credentials', 'token'];
             foreach ($paths as $path) {
                 foreach ($sensitivePatterns as $pattern) {
-                    if (str_contains(strtolower((string) $path), $pattern)) {
-                        $this->addIssue(
-                            self::MUST,
-                            'Sensitive artifact',
-                            $name . ': artifacts.paths',
-                            'Do not upload secrets/credentials as artifacts per 6.2.3: ' . $path,
-                        );
+                    if (!str_contains(strtolower((string) $path), $pattern)) {
+                        continue;
                     }
+
+                    $this->addIssue(
+                        self::MUST,
+                        'Sensitive artifact',
+                        $name . ': artifacts.paths',
+                        'Do not upload secrets/credentials as artifacts per 6.2.3: ' . $path,
+                    );
                 }
             }
 
@@ -800,14 +810,16 @@ class GitLabCiChecker
 
         // Check for hardcoded secrets (7.1)
         foreach ($this->securityPatterns as $pattern => $desc) {
-            if (preg_match($pattern, $allContent) === 1) {
-                $this->addIssue(
-                    self::MUST,
-                    'Security violation',
-                    'YAML content',
-                    $desc . ' detected - use CI/CD Variables per 7.1',
-                );
+            if (preg_match($pattern, $allContent) !== 1) {
+                continue;
             }
+
+            $this->addIssue(
+                self::MUST,
+                'Security violation',
+                'YAML content',
+                $desc . ' detected - use CI/CD Variables per 7.1',
+            );
         }
 
         // Check for echo of variables (10.5)
@@ -822,14 +834,16 @@ class GitLabCiChecker
 
         // Check for privileged mode (5.3)
         foreach ($this->allJobs as $name => $job) {
-            if (!empty($job['config']['privileged'])) {
-                $this->addIssue(
-                    self::MUST,
-                    'Privileged container',
-                    $name . ': privileged',
-                    'Restrict privileged mode to jobs requiring Docker-in-Docker per 5.3',
-                );
+            if (empty($job['config']['privileged'])) {
+                continue;
             }
+
+            $this->addIssue(
+                self::MUST,
+                'Privileged container',
+                $name . ': privileged',
+                'Restrict privileged mode to jobs requiring Docker-in-Docker per 5.3',
+            );
         }
 
         // Check environment protection (7.4, 7.5, 7.6)
@@ -1052,9 +1066,9 @@ class GitLabCiChecker
 
     private function printReport(): void
     {
-        $mustIssues = array_filter($this->issues, fn(array $i): bool => $i['level'] === self::MUST);
-        $shouldIssues = array_filter($this->issues, fn(array $i): bool => $i['level'] === self::SHOULD);
-        $mayIssues = array_filter($this->issues, fn(array $i): bool => $i['level'] === self::MAY);
+        $mustIssues = array_filter($this->issues, static fn(array $i): bool => $i['level'] === self::MUST);
+        $shouldIssues = array_filter($this->issues, static fn(array $i): bool => $i['level'] === self::SHOULD);
+        $mayIssues = array_filter($this->issues, static fn(array $i): bool => $i['level'] === self::MAY);
 
         echo "\n" . str_repeat('=', 60) . "\n";
         echo "GitLab CI/CD Standards Compliance Report\n";
