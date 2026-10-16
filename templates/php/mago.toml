@@ -1,6 +1,6 @@
-#:schema https://mago.carthage.software/1.43.0/schema.json
+#:schema https://mago.carthage.software/1.57.0/schema.json
 # Welcome to Mago!
-# For full documentation, see https://mago.carthage.software/1.43.0/en/tools/overview/
+# For full documentation, see https://mago.carthage.software/1.57.0/en/tools/overview/
 php-version = "8.3.0"
 version = "1"
 
@@ -36,7 +36,6 @@ too-many-properties = { threshold = 40 }
 
 [analyzer]
 allow-array-truthy-operand = false
-allow-possibly-undefined-array-keys = true
 analyze-dead-code = false
 check-missing-override = false
 check-missing-type-hints = false
