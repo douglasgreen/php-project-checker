@@ -33,11 +33,9 @@
       "mago analyze",
       "mago guard"
     ],
-    "lint:format": [
-      "mago format"
-    ],
     "lint:fix": [
-      "mago lint --fix"
+      "mago lint --fix",
+      "mago format"
     ],
     "lint:upgrade": [
       "rector process"
