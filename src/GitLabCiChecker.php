@@ -12,7 +12,6 @@ declare(strict_types=1);
 namespace DouglasGreen\PHPProjectChecker;
 
 use Exception;
-use Symfony\Component\Yaml\Yaml;
 
 class GitLabCiChecker
 {
@@ -31,10 +30,10 @@ class GitLabCiChecker
     /** @var array<string, mixed> */
     private array $ciConfig = [];
 
-    /** @var array<string, mixed> */
+    /** @var array<string, array<array-key, mixed>> */
     private array $includedFiles = [];
 
-    /** @var array<string, array{config: array<string, mixed>, source: string}> */
+    /** @var array<string, array{config: array<array-key, mixed>, source: string}> */
     private array $allJobs = [];
 
     /** @var array<int, array<string, string>> */
@@ -104,6 +103,7 @@ class GitLabCiChecker
 
         if ($configFile !== '' && file_exists($configFile)) {
             $content = file_get_contents($configFile);
+            /** @var array<string, mixed>|scalar|null $userConfig */
             $userConfig = json_decode((string) $content, true);
             if (!is_array($userConfig)) {
                 fwrite(STDERR, "\033[33mWarning: Invalid config JSON, using defaults\033[0m\n");
@@ -122,6 +122,7 @@ class GitLabCiChecker
         $path = $this->rootDir . '/composer.json';
         if (file_exists($path)) {
             $content = file_get_contents($path);
+            /** @var array<string, mixed>|scalar|null $decoded */
             $decoded = json_decode((string) $content, true);
             if (is_array($decoded)) {
                 $this->composer = $decoded;
@@ -165,14 +166,18 @@ class GitLabCiChecker
     private function parseYaml(string $content): ?array
     {
         if (function_exists('yaml_parse')) {
+            /** @var array<string, mixed>|scalar|null $result */
             $result = yaml_parse($content);
             return is_array($result) ? $result : null;
         }
 
-        // Fallback to Symfony YAML if available
-        if (class_exists(Yaml::class)) {
+        // Fallback to Symfony YAML if available (optional, not required in composer.json)
+        $yamlClass = 'Symfony\\Component\\Yaml\\Yaml';
+        if (class_exists($yamlClass)) {
             try {
-                return Yaml::parse($content);
+                /** @var array<string, mixed>|scalar|null $parsed */
+                $parsed = call_user_func($yamlClass . '::parse', $content);
+                return is_array($parsed) ? $parsed : null;
             } catch (Exception) {
                 return null;
             }
@@ -194,10 +199,11 @@ class GitLabCiChecker
 
         $includes = is_array($config['include']) ? $config['include'] : [$config['include']];
 
+        /** @var string|array<array-key, mixed> $include */
         foreach ($includes as $include) {
             if (is_string($include)) {
                 $this->processInclude($include, $basePath);
-            } elseif (is_array($include) && isset($include['local'])) {
+            } elseif (isset($include['local']) && is_string($include['local'])) {
                 $this->processInclude($include['local'], $basePath);
             }
         }
@@ -226,7 +232,7 @@ class GitLabCiChecker
 
     private function collectJobs(): void
     {
-        $allConfigs = array_merge([$this->ciConfig], $this->includedFiles);
+        $allConfigs = array_merge(['.gitlab-ci.yml' => $this->ciConfig], $this->includedFiles);
 
         foreach ($allConfigs as $source => $config) {
             foreach ($config as $key => $value) {
@@ -235,14 +241,14 @@ class GitLabCiChecker
                     continue;
                 }
 
-                if (in_array($key, ['stages', 'variables', 'workflow', 'include', 'default'])) {
+                if (in_array($key, ['stages', 'variables', 'workflow', 'include', 'default'], strict: true)) {
                     continue;
                 }
 
                 if (is_array($value) && (isset($value['script']) || isset($value['extends']))) {
-                    $this->allJobs[$key] = [
+                    $this->allJobs[(string) $key] = [
                         'config' => $value,
-                        'source' => is_int($source) ? '.gitlab-ci.yml' : $source,
+                        'source' => $source,
                     ];
                 }
             }
@@ -303,9 +309,10 @@ class GitLabCiChecker
         }
 
         // Check line length (2.4)
+        $maxLineLength = (int) $this->config['maxLineLength'];
         $lines = explode("\n", $content);
         foreach ($lines as $i => $line) {
-            if (!(strlen($line) > $this->config['maxLineLength'] && !str_starts_with(trim($line), '#'))) {
+            if (!(strlen($line) > $maxLineLength && !str_starts_with(trim($line), '#'))) {
                 continue;
             }
 
@@ -313,7 +320,7 @@ class GitLabCiChecker
                 self::SHOULD,
                 'Line too long',
                 '.gitlab-ci.yml:' . ($i + 1),
-                sprintf('Line exceeds %s characters per 2.4', $this->config['maxLineLength']),
+                sprintf('Line exceeds %s characters per 2.4', $maxLineLength),
             );
         }
 
@@ -338,10 +345,21 @@ class GitLabCiChecker
         }
 
         $stages = $this->ciConfig['stages'];
+        if (!is_array($stages)) {
+            $this->addIssue(self::MUST, 'Invalid stages', 'stages', 'Stages must be a list of stage names per 1.2.1');
+            return;
+        }
 
         // Check fail-fast ordering (1.2.4)
         $expectedOrder = ['build', 'test', 'security', 'deploy', 'verify'];
-        $normalizedStages = array_map(strtolower(...), $stages);
+        $normalizedStages = [];
+        foreach ($stages as $stage) {
+            if (!is_string($stage)) {
+                continue;
+            }
+
+            $normalizedStages[] = strtolower($stage);
+        }
 
         $lastIndex = -1;
         foreach ($expectedOrder as $stage) {
@@ -363,6 +381,7 @@ class GitLabCiChecker
 
         // Check all jobs are assigned to stages
         foreach ($this->allJobs as $name => $job) {
+            /** @var string|int|null $stage */
             $stage = $job['config']['stage'] ?? null;
             if (empty($stage)) {
                 $this->addIssue(
@@ -371,7 +390,7 @@ class GitLabCiChecker
                     $name . ': stage',
                     'Every job must have explicit stage assignment per 1.2.2',
                 );
-            } elseif (!in_array($stage, $stages)) {
+            } elseif (!in_array($stage, $stages, strict: true)) {
                 $this->addIssue(
                     self::MUST,
                     'Invalid stage',
@@ -397,7 +416,7 @@ class GitLabCiChecker
         // Check for only/except usage (3.1.2, 3.1.3)
         $content = (string) file_get_contents($this->primaryFile);
         foreach (array_keys($this->includedFiles) as $path) {
-            $content .= "\n" . file_get_contents($this->rootDir . '/' . $path);
+            $content .= "\n" . (string) file_get_contents($this->rootDir . '/' . $path);
         }
 
         if (preg_match('/^\s*(only|except):\s*$/m', $content) === 1) {
@@ -454,7 +473,7 @@ class GitLabCiChecker
                         'Deployment jobs should have interruptible: false per 5.5',
                     );
                 }
-            } elseif ($this->config['requireInterruptible'] && !isset($job['config']['interruptible'])) {
+            } elseif ((bool) $this->config['requireInterruptible'] && !isset($job['config']['interruptible'])) {
                 $this->addIssue(
                     self::SHOULD,
                     'Missing interruptible',
@@ -491,18 +510,31 @@ class GitLabCiChecker
     private function validateScripts(): void
     {
         foreach ($this->allJobs as $name => $job) {
+            /** @var array<array-key, mixed>|string $script */
             $script = $job['config']['script'] ?? [];
             if (!is_array($script)) {
                 $script = [$script];
             }
 
+            /** @var array<array-key, mixed>|string $beforeScript */
             $beforeScript = $job['config']['before_script'] ?? [];
             if (!is_array($beforeScript)) {
                 $beforeScript = [$beforeScript];
             }
 
             $allScripts = array_merge($beforeScript, $script);
-            $scriptText = implode("\n", $allScripts);
+
+            // Only scalar entries contribute script text; nested structures are ignored
+            $scriptLines = [];
+            foreach ($allScripts as $line) {
+                if (!is_scalar($line)) {
+                    continue;
+                }
+
+                $scriptLines[] = (string) $line;
+            }
+
+            $scriptText = implode("\n", $scriptLines);
 
             // Check for strict mode (4.1, 4.2)
             if ($this->config['requireStrictMode']) {
@@ -540,6 +572,7 @@ class GitLabCiChecker
             // Check for bash script files in bin/ directory
             if (preg_match('/\.\/bin\/\w+\.sh/', $scriptText)) {
                 // This is preferred per file location standards, but check if file exists
+                $matches = [];
                 preg_match_all('/\.\/bin\/(\w+\.sh)/', $scriptText, $matches);
                 foreach ($matches[1] as $scriptFile) {
                     $fullPath = $this->rootDir . '/bin/' . $scriptFile;
@@ -556,7 +589,7 @@ class GitLabCiChecker
 
             // Check for deprecated composer flags
             foreach ($this->deprecatedComposerFlags as $flag) {
-                if (!str_contains($scriptText, (string) $flag)) {
+                if (!str_contains($scriptText, $flag)) {
                     continue;
                 }
 
@@ -588,10 +621,11 @@ class GitLabCiChecker
                 continue;
             }
 
+            /** @var array<array-key, mixed>|string $cache */
             $cache = $job['config']['cache'];
 
             // Check for untracked: true (user requirement)
-            if ($this->config['requireUntrackedCache'] && !isset($cache['untracked'])) {
+            if ((bool) $this->config['requireUntrackedCache'] && !isset($cache['untracked'])) {
                 $this->addIssue(
                     self::MUST,
                     'Missing untracked cache',
@@ -602,6 +636,7 @@ class GitLabCiChecker
 
             // Check cache key with lockfile (6.1.2)
             if (isset($cache['key'])) {
+                /** @var array<array-key, mixed>|string $key */
                 $key = $cache['key'];
                 if (
                     is_string($key)
@@ -616,11 +651,12 @@ class GitLabCiChecker
                             'Cache key must incorporate lockfiles to prevent poisoning per 6.1.2',
                         );
                     } else {
+                        /** @var array<array-key, mixed>|string $files */
                         $files = $cache['key']['files'];
                         $lockfiles = ['composer.lock', 'package-lock.json', 'yarn.lock', 'go.sum'];
                         $hasLockfile = false;
                         foreach ($lockfiles as $lock) {
-                            if (!in_array($lock, (array) $files)) {
+                            if (!in_array($lock, (array) $files, strict: true)) {
                                 continue;
                             }
 
@@ -664,6 +700,7 @@ class GitLabCiChecker
                 continue;
             }
 
+            /** @var array<array-key, mixed>|string $artifacts */
             $artifacts = $job['config']['artifacts'];
 
             // Check expire_in (6.2.2)
@@ -684,11 +721,15 @@ class GitLabCiChecker
             }
 
             // Check for secrets in artifacts (6.2.3)
-            $paths = $artifacts['paths'] ?? [];
+            $paths = is_array($artifacts['paths'] ?? null) ? $artifacts['paths'] : [];
             $sensitivePatterns = ['.env', 'config.php', 'secrets', 'credentials', 'token'];
             foreach ($paths as $path) {
+                if (!is_string($path)) {
+                    continue;
+                }
+
                 foreach ($sensitivePatterns as $pattern) {
-                    if (!str_contains(strtolower((string) $path), $pattern)) {
+                    if (!str_contains(strtolower($path), $pattern)) {
                         continue;
                     }
 
@@ -721,9 +762,9 @@ class GitLabCiChecker
             foreach ($this->allJobs as $name => $job) {
                 $image = $job['config']['image'] ?? $defaultImage;
 
-                $imageName = is_array($image) ? $image['name'] ?? '' : $image;
+                $imageName = is_array($image) ? (string) ($image['name'] ?? '') : (string) $image;
 
-                if (str_ends_with((string) $imageName, ':latest') || str_contains((string) $imageName, ':') === false) {
+                if (str_ends_with($imageName, ':latest') || str_contains($imageName, ':') === false) {
                     $this->addIssue(
                         self::MUST,
                         'Unpinned image',
@@ -733,17 +774,16 @@ class GitLabCiChecker
                 }
 
                 // PHP version consistency check
-                if (preg_match('/php:(\d+\.\d+)/', (string) $imageName, $matches)) {
+                $matches = [];
+                if (preg_match('/php:(\d+\.\d+)/', $imageName, $matches)) {
                     $ciPhpVersion = $matches[1];
 
                     // Compare with composer.json
                     if ($this->composer !== null) {
-                        $composerPhp = $this->composer['require']['php'] ?? '';
-                        $cleanComposerPhp = preg_replace('/[^\d.]/', '', $composerPhp);
+                        $composerPhp = (string) ($this->composer['require']['php'] ?? '');
+                        $cleanComposerPhp = preg_replace('/[^\d.]/', '', $composerPhp) ?? '';
 
-                        if (
-                            !empty($cleanComposerPhp) && version_compare($ciPhpVersion, (string) $cleanComposerPhp, '<')
-                        ) {
+                        if (!empty($cleanComposerPhp) && version_compare($ciPhpVersion, $cleanComposerPhp, '<')) {
                             $this->addIssue(
                                 self::MUST,
                                 'PHP version mismatch',
@@ -782,7 +822,7 @@ class GitLabCiChecker
         }
 
         // Find PHP version references that don't match
-        if (preg_match_all('/php[:\-]?(\d+\.\d+)/i', $content, $matches, PREG_SET_ORDER) > 0) {
+        if ((int) preg_match_all('/php[:\-]?(\d+\.\d+)/i', $content, $matches, PREG_SET_ORDER) > 0) {
             foreach ($matches as $match) {
                 $foundVersion = $match[1];
                 if (version_compare($foundVersion, (string) $cleanComposerPhp, '<')) {
@@ -985,7 +1025,7 @@ class GitLabCiChecker
 
             if (
                 (str_contains((string) $name, 'test') || str_contains((string) $name, 'lint'))
-                && (!$hasMrRule && $this->config['requiredWorkflowRules'])
+                && (!$hasMrRule && (bool) $this->config['requiredWorkflowRules'])
             ) {
                 $this->addIssue(
                     self::MUST,

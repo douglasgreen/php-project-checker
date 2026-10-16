@@ -1,6 +1,8 @@
 #!/usr/bin/env php
 <?php
 
+declare(strict_types=1);
+
 /**
  * Repository Reporter using git ls-files
  */
@@ -110,7 +112,7 @@ foreach ($files as $file) {
     }
 
     // 2. PHPUnit Configs & Tests directory
-    if ($isTopLevel && in_array($file, $phpunitFiles)) {
+    if ($isTopLevel && in_array($file, $phpunitFiles, strict: true)) {
         $foundPhpunitConfigs[] = $file;
     }
     if (str_starts_with($file, 'tests/')) {
@@ -166,13 +168,13 @@ foreach ($files as $file) {
 
     if ($isTopLevel) {
         // 4. Specific Top-level files (Preferred)
-        if (in_array($file, $specificFilesToCheck)) {
+        if (in_array($file, $specificFilesToCheck, strict: true)) {
             $foundSpecificFiles[] = $file;
         }
 
         // 5. Forbidden Alternatives
         foreach ($forbiddenAlternatives as $preferred => $alternatives) {
-            if (!in_array($file, $alternatives)) {
+            if (!in_array($file, $alternatives, strict: true)) {
                 continue;
             }
 
@@ -253,6 +255,10 @@ if ($fixMode) {
 
     $sourceTemplatesDir = __DIR__ . '/../templates';
     $targetDir = getcwd();
+    if ($targetDir === false) {
+        echo "Error: Unable to determine the current working directory.\n";
+        exit(1);
+    }
 
     if (!is_dir($sourceTemplatesDir)) {
         echo sprintf('Error: Templates directory not found at %s%s', $sourceTemplatesDir, PHP_EOL);
@@ -286,7 +292,9 @@ if ($fixMode) {
         'yaml' => ['yaml', 'js'],
     ];
 
+    /** @var array<int, string> $copiedFiles */
     $copiedFiles = [];
+    /** @var array<int, string> $errors */
     $errors = [];
 
     /**
@@ -305,6 +313,11 @@ if ($fixMode) {
         }
 
         $items = scandir($sourcePath);
+        if ($items === false) {
+            $errors[] = 'Failed to read directory: ' . $sourcePath;
+            return;
+        }
+
         foreach ($items as $item) {
             if ($item === '.') {
                 continue;
@@ -319,7 +332,7 @@ if ($fixMode) {
                 $copyDirectory($sourceItem, $targetItem, $copiedFiles, $errors);
             } elseif (is_file($sourceItem)) {
                 if (copy($sourceItem, $targetItem)) {
-                    $copiedFiles[] = substr($targetItem, strlen(getcwd()) + 1);
+                    $copiedFiles[] = substr($targetItem, strlen((string) getcwd()) + 1);
                 } else {
                     $errors[] = sprintf('Failed to copy: %s -> %s', $sourceItem, $targetItem);
                 }
@@ -367,6 +380,11 @@ if ($fixMode) {
                 echo "Copying templates/{$templateDir}/* (excluding package.json if exists)...\n";
                 if (is_dir($sourcePath)) {
                     $items = scandir($sourcePath);
+                    if ($items === false) {
+                        $errors[] = 'Failed to read directory: ' . $sourcePath;
+                        continue;
+                    }
+
                     foreach ($items as $item) {
                         if ($item === '.') {
                             continue;
@@ -404,6 +422,7 @@ if ($fixMode) {
     // Report results
     if ($copiedFiles !== []) {
         echo "\nCopied " . count($copiedFiles) . " file(s):\n";
+        /** @var string $file */
         foreach ($copiedFiles as $file) {
             echo sprintf('   - %s%s', $file, PHP_EOL);
         }
@@ -411,6 +430,7 @@ if ($fixMode) {
 
     if (!empty($errors)) {
         echo "\nErrors:\n";
+        /** @var string $error */
         foreach ($errors as $error) {
             echo sprintf('   - %s%s', $error, PHP_EOL);
         }

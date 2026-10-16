@@ -6,6 +6,7 @@ namespace DouglasGreen\PHPProjectChecker;
 
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use SplFileInfo;
 
 class RepoMapBuilder
 {
@@ -41,17 +42,20 @@ class RepoMapBuilder
         }
 
         $command = 'git -C ' . escapeshellarg($this->gitRoot) . ' ls-files 2>&1';
+        $output = [];
+        $returnCode = 0;
         exec($command, $output, $returnCode);
 
         if ($returnCode !== 0 || $output === []) {
             // Fallback to recursive directory scan
-            $this->files = [];
-            $this->scanDirectory($this->gitRoot, $this->files);
+            $files = [];
+            $this->scanDirectory($this->gitRoot, $files);
         } else {
-            $this->files = $output;
+            $files = $output;
         }
 
-        return $this->files;
+        $this->files = $files;
+        return $files;
     }
 
     /**
@@ -88,7 +92,7 @@ class RepoMapBuilder
             // Check for extensionless PHP files
             $basename = basename($file);
             // Check if it has no extension (no dot in basename)
-            if (strpos($basename, '.') === false && $this->isPhpShebang($fullPath)) {
+            if (!str_contains($basename, '.') && $this->isPhpShebang($fullPath)) {
                 $phpFiles[] = $fullPath;
             }
         }
@@ -102,7 +106,14 @@ class RepoMapBuilder
             return false;
         }
 
-        $handle = @fopen($filePath, 'r');
+        // Silence the warning from a failed open without the @ operator
+        set_error_handler(static fn(): bool => true);
+        try {
+            $handle = fopen($filePath, 'r');
+        } finally {
+            restore_error_handler();
+        }
+
         if (!$handle) {
             return false;
         }
@@ -147,10 +158,14 @@ class RepoMapBuilder
     private function scanDirectory(string $dir, array &$files): void
     {
         $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
+            new RecursiveDirectoryIterator(
+                $dir,
+                RecursiveDirectoryIterator::SKIP_DOTS | RecursiveDirectoryIterator::CURRENT_AS_FILEINFO,
+            ),
             RecursiveIteratorIterator::SELF_FIRST,
         );
 
+        /** @var SplFileInfo $file */
         foreach ($iterator as $file) {
             if (!$file->isFile()) {
                 continue;
@@ -160,7 +175,7 @@ class RepoMapBuilder
             // Skip vendor and common excluded directories
             if (!preg_match('#/(vendor|node_modules|\.git)/#', (string) $path)) {
                 // Return relative paths to match git ls-files behavior
-                $relativePath = str_replace($this->gitRoot . '/', '', $path);
+                $relativePath = str_replace((string) $this->gitRoot . '/', '', $path);
                 $files[] = $relativePath;
             }
         }

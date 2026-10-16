@@ -11,7 +11,6 @@ use DouglasGreen\PHPProjectChecker\GitLabCiChecker;
 $options = getopt('d:c:', ['directory:', 'config:']);
 /** @var string $directory */
 $directory = $options['d'] ?? $options['directory'] ?? getcwd();
-/** @var string $configFile */
 $configFile = $options['c'] ?? $options['config'] ?? '';
 
 $checker = new GitLabCiChecker($directory, $configFile);
