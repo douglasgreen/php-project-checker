@@ -15,7 +15,5 @@ return RectorConfig::configure()
     ->withSets([
         LevelSetList::UP_TO_PHP_85,
     ])
-    ->withComposerBased(
-        symfony: true,
-    )
+    ->withComposerBased(symfony: true)
     ->withPhpVersion(PhpVersion::PHP_83);
