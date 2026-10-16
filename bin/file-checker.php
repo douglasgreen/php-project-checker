@@ -51,18 +51,38 @@ $extensionCounts = [
 ];
 
 $specificFilesToCheck = [
-    'composer.json', 'eslint.config.mjs', '.gitignore',
-    '.markdownlintignore', '.markdownlint.json', 'package.json', '.php-cs-fixer.php',
-    'phpstan.neon.dist', 'phpunit.xml.dist', 'playwright.config.ts', '.prettierignore',
-    '.prettierrc.json', 'rector.php', '.shellcheckrc', '.stylelintignore',
-    '.stylelintrc.json', '.yamllint.yml',
+    'composer.json',
+    'eslint.config.mjs',
+    '.gitignore',
+    '.markdownlintignore',
+    '.markdownlint.json',
+    'package.json',
+    '.php-cs-fixer.php',
+    'phpstan.neon.dist',
+    'phpunit.xml.dist',
+    'playwright.config.ts',
+    '.prettierignore',
+    '.prettierrc.json',
+    'rector.php',
+    '.shellcheckrc',
+    '.stylelintignore',
+    '.stylelintrc.json',
+    '.yamllint.yml',
 ];
 
 /**
  * Mapping of preferred files to the alternative forms that should NOT exist.
  */
 $forbiddenAlternatives = [
-    'eslint.config.mjs' => ['eslint.config.js', 'eslint.config.cjs', '.eslintrc.js', '.eslintrc.json', '.eslintrc.yml', '.eslintrc', '.eslintignore'],
+    'eslint.config.mjs' => [
+        'eslint.config.js',
+        'eslint.config.cjs',
+        '.eslintrc.js',
+        '.eslintrc.json',
+        '.eslintrc.yml',
+        '.eslintrc',
+        '.eslintignore',
+    ],
     'playwright.config.ts' => ['playwright.config.js', 'playwright.config.mjs', 'playwright.config.cjs'],
     'phpstan.neon.dist' => ['phpstan.neon'],
     'phpunit.xml.dist' => ['phpunit.xml', 'phpunit.dist.xml'],
@@ -80,7 +100,7 @@ $foundForbiddenFiles = [];
 foreach ($files as $file) {
     $parts = explode('/', $file);
     $fileName = basename($file);
-    $isTopLevel = (count($parts) === 1);
+    $isTopLevel = count($parts) === 1;
 
     // 1. Top-level directories containing PHP files
     if (count($parts) > 1 && str_ends_with($file, '.php')) {
@@ -264,7 +284,9 @@ if ($fixMode) {
     /**
      * Copy a directory recursively from source to target.
      */
-    $copyDirectory = function (string $sourcePath, string $targetPath, array &$copiedFiles, array &$errors) use (&$copyDirectory): void {
+    $copyDirectory = function (string $sourcePath, string $targetPath, array &$copiedFiles, array &$errors) use (
+        &$copyDirectory,
+    ): void {
         if (!is_dir($sourcePath)) {
             return;
         }

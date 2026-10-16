@@ -255,12 +255,7 @@ class GitLabCiChecker
     {
         // Check primary file location (1.1.1)
         if (!file_exists($this->rootDir . '/.gitlab-ci.yml')) {
-            $this->addIssue(
-                self::MUST,
-                'Missing CI file',
-                'root',
-                '.gitlab-ci.yml must be at project root per 1.1.1',
-            );
+            $this->addIssue(self::MUST, 'Missing CI file', 'root', '.gitlab-ci.yml must be at project root per 1.1.1');
         }
 
         // Check for circular includes (1.1.3) - simplified check
@@ -302,12 +297,7 @@ class GitLabCiChecker
 
         // Check 2-space indentation (2.1)
         if (preg_match('/^\t+/m', $content) === 1) {
-            $this->addIssue(
-                self::MUST,
-                'Tab indentation',
-                '.gitlab-ci.yml',
-                'Use 2 spaces, not tabs per 2.1',
-            );
+            $this->addIssue(self::MUST, 'Tab indentation', '.gitlab-ci.yml', 'Use 2 spaces, not tabs per 2.1');
         }
 
         // Check line length (2.4)
@@ -339,12 +329,7 @@ class GitLabCiChecker
     {
         // Check explicit stages declaration (1.2.1)
         if (!isset($this->ciConfig['stages'])) {
-            $this->addIssue(
-                self::MUST,
-                'Missing stages',
-                'stages',
-                'Explicit stages declaration required per 1.2.1',
-            );
+            $this->addIssue(self::MUST, 'Missing stages', 'stages', 'Explicit stages declaration required per 1.2.1');
             return;
         }
 
@@ -612,7 +597,10 @@ class GitLabCiChecker
             // Check cache key with lockfile (6.1.2)
             if (isset($cache['key'])) {
                 $key = $cache['key'];
-                if (is_string($key) && preg_match('/(composer|package)-?lock|yarn\.lock|package-lock\.json/', $key) !== 1) {
+                if (
+                    is_string($key)
+                    && preg_match('/(composer|package)-?lock|yarn\.lock|package-lock\.json/', $key) !== 1
+                ) {
                     // If key doesn't reference lockfile, check if files key exists
                     if (!isset($cache['key']['files'])) {
                         $this->addIssue(
@@ -646,7 +634,11 @@ class GitLabCiChecker
 
             // Check policy for pull-only jobs
             // This job updates cache, check if it should
-            if (isset($cache['policy']) && $cache['policy'] === 'push' && (str_contains((string) $name, 'lint') || str_contains((string) $name, 'test'))) {
+            if (
+                isset($cache['policy'])
+                && $cache['policy'] === 'push'
+                && (str_contains((string) $name, 'lint') || str_contains((string) $name, 'test'))
+            ) {
                 $this->addIssue(
                     self::MAY,
                     'Cache push policy',
@@ -700,7 +692,10 @@ class GitLabCiChecker
             }
 
             // Check reports (8.1, 10.1)
-            if (isset($artifacts['reports']) && (isset($artifacts['reports']['junit']) || isset($artifacts['reports']['coverage']))) {
+            if (
+                isset($artifacts['reports'])
+                && (isset($artifacts['reports']['junit']) || isset($artifacts['reports']['coverage']))
+            ) {
                 // Good, these enable GitLab UI integration
             }
         }
@@ -736,12 +731,18 @@ class GitLabCiChecker
                         $composerPhp = $this->composer['require']['php'] ?? '';
                         $cleanComposerPhp = preg_replace('/[^\d.]/', '', $composerPhp);
 
-                        if (!empty($cleanComposerPhp) && version_compare($ciPhpVersion, (string) $cleanComposerPhp, '<')) {
+                        if (
+                            !empty($cleanComposerPhp) && version_compare($ciPhpVersion, (string) $cleanComposerPhp, '<')
+                        ) {
                             $this->addIssue(
                                 self::MUST,
                                 'PHP version mismatch',
                                 $name . ': image',
-                                sprintf('CI PHP %s < Composer PHP %s per user requirements', $ciPhpVersion, $cleanComposerPhp),
+                                sprintf(
+                                    'CI PHP %s < Composer PHP %s per user requirements',
+                                    $ciPhpVersion,
+                                    $cleanComposerPhp,
+                                ),
                             );
                         }
                     }
@@ -779,7 +780,11 @@ class GitLabCiChecker
                         self::MUST,
                         'PHP version outdated',
                         'CI configuration',
-                        sprintf('Found PHP %s reference, but composer.json requires %s per user requirements', $foundVersion, $cleanComposerPhp),
+                        sprintf(
+                            'Found PHP %s reference, but composer.json requires %s per user requirements',
+                            $foundVersion,
+                            $cleanComposerPhp,
+                        ),
                     );
                 }
             }
@@ -851,7 +856,10 @@ class GitLabCiChecker
                             );
                         }
 
-                        if (str_contains(strtolower((string) $env['name']), 'prod') || str_contains((string) $name, 'prod')) {
+                        if (
+                            str_contains(strtolower((string) $env['name']), 'prod')
+                            || str_contains((string) $name, 'prod')
+                        ) {
                             // Check for protection
                             if (empty($job['config']['resource_group'])) {
                                 $this->addIssue(
@@ -863,8 +871,10 @@ class GitLabCiChecker
                             }
 
                             // Check if protected environment is configured (can't fully validate from file alone)
-                            if (!isset($job['config']['environment']['deployment_tier'])
-                                || $job['config']['environment']['deployment_tier'] !== 'production') {
+                            if (
+                                !isset($job['config']['environment']['deployment_tier'])
+                                || $job['config']['environment']['deployment_tier'] !== 'production'
+                            ) {
                                 $this->addIssue(
                                     self::SHOULD,
                                     'Production tier',
@@ -877,8 +887,13 @@ class GitLabCiChecker
                 }
 
                 // Check for manual gate (7.7)
-                if (str_contains(strtolower((string) $name), 'prod')
-                    && (!isset($job['config']['rules']) || !preg_match('/when:\s*manual/i', (string) json_encode($job['config'])))) {
+                if (
+                    str_contains(strtolower((string) $name), 'prod')
+                    && (
+                        !isset($job['config']['rules'])
+                        || !preg_match('/when:\s*manual/i', (string) json_encode($job['config']))
+                    )
+                ) {
                     $this->addIssue(
                         self::SHOULD,
                         'Missing manual gate',
@@ -954,7 +969,10 @@ class GitLabCiChecker
                 }
             }
 
-            if ((str_contains((string) $name, 'test') || str_contains((string) $name, 'lint')) && (!$hasMrRule && $this->config['requiredWorkflowRules'])) {
+            if (
+                (str_contains((string) $name, 'test') || str_contains((string) $name, 'lint'))
+                && (!$hasMrRule && $this->config['requiredWorkflowRules'])
+            ) {
                 $this->addIssue(
                     self::MUST,
                     'Missing MR rule',
@@ -969,7 +987,10 @@ class GitLabCiChecker
                 /** @var array<string, mixed> $rule */
                 foreach ($rules as $rule) {
                     $if = $rule['if'] ?? '';
-                    if (str_contains((string) $if, 'CI_COMMIT_BRANCH') || str_contains((string) $if, 'CI_DEFAULT_BRANCH')) {
+                    if (
+                        str_contains((string) $if, 'CI_COMMIT_BRANCH')
+                        || str_contains((string) $if, 'CI_DEFAULT_BRANCH')
+                    ) {
                         $hasBranchProtection = true;
                     }
                 }
@@ -1089,8 +1110,8 @@ class GitLabCiChecker
 
         // Compliance score
         $totalChecks = 20 + (count($this->allJobs) * 8);
-        $deduction = (count($mustIssues) * 5) + (count($shouldIssues));
-        $compliance = max(0, 100 - ($deduction * 100 / $totalChecks));
+        $deduction = (count($mustIssues) * 5) + count($shouldIssues);
+        $compliance = max(0, 100 - (($deduction * 100) / $totalChecks));
         printf("Compliance score: %d%%\n", $compliance);
 
         echo "\n";
