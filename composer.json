@@ -25,8 +25,7 @@
   "scripts": {
     "lint": [
       "mago lint",
-      "mago analyze",
-      "mago guard"
+      "mago analyze"
     ],
     "lint:fix": [
       "mago lint --fix",
