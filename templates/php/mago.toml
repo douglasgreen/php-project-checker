@@ -1,20 +1,13 @@
 #:schema https://mago.carthage.software/1.57.0/schema.json
-# Welcome to Mago!
-# For full documentation, see https://mago.carthage.software/1.57.0/en/tools/overview/
 php-version = "8.3.0"
 version = "1"
 
 [source]
-excludes = []
 includes = ["vendor"]
 paths = ["bin", "public", "src", "tests"]
-workspace = "."
 
 [source.glob]
 literal-separator = true
-
-[formatter]
-preset = "default"
 
 [linter]
 integrations = ["symfony", "phpunit"]
@@ -35,19 +28,4 @@ too-many-methods = { threshold = 40 }
 too-many-properties = { threshold = 40 }
 
 [analyzer]
-allow-array-truthy-operand = false
-analyze-dead-code = false
-check-missing-override = false
-check-missing-type-hints = false
-check-throws = false
-find-unused-definitions = true
 find-unused-expressions = false
-find-unused-parameters = false
-memoize-properties = true
-no-boolean-literal-comparison = false
-plugins = []
-register-super-globals = true
-strict-array-index-existence = false
-strict-list-index-checks = false
-unchecked-exception-classes = []
-unchecked-exceptions = ["Error", "LogicException"]
