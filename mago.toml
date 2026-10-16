@@ -32,8 +32,11 @@ too-many-properties = { enabled = false }
 [analyzer]
 find-unused-expressions = false
 ignore = [
+    "mixed-argument",
+    "mixed-array-access",
     "mixed-assignment",
     "mixed-operand",
-    "redundant-cast",
+    "mixed-property-access",
+    "mixed-property-type-coercion",
     "reference-to-undefined-variable",
 ]
