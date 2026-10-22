@@ -47,6 +47,7 @@ ignore = [
     "non-documented-property",
     "possibly-false-operand",
     "possibly-null-operand",
+    "possibly-undefined-variable",
     "redundant-cast",
     "redundant-comparison",
     "redundant-condition",
