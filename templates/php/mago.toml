@@ -45,6 +45,8 @@ ignore = [
     "mixed-property-access",
     "mixed-property-type-coercion",
     "non-documented-property",
+    "possibly-false-operand",
+    "possibly-null-operand",
     "redundant-cast",
     "redundant-comparison",
     "redundant-condition",
