@@ -13,7 +13,7 @@ literal-separator = true
 integrations = ["symfony", "phpunit"]
 
 [linter.rules]
-assertion-style = { style = "this" }
+assertion-style = { enabled = false }
 cyclomatic-complexity = { enabled = false }
 excessive-nesting = { enabled = false }
 excessive-parameter-list = { enabled = false }
