@@ -17,15 +17,21 @@ assertion-style = { style = "this" }
 cyclomatic-complexity = { enabled = false }
 excessive-nesting = { enabled = false }
 excessive-parameter-list = { enabled = false }
+function-name = { camel = true }
 halstead = { enabled = false }
+identity-comparison = { enabled = false }
 kan-defect = { enabled = false }
 literal-named-argument = { enabled = false }
+no-assign-in-condition = { enabled = false }
 no-boolean-flag-parameter = { enabled = false }
 no-else-clause = { enabled = false }
 no-empty = { enabled = false }
 no-ini-set = { enabled = false }
 no-isset = { enabled = false }
 no-shorthand-ternary = { enabled = false }
+no-sprintf-concat = { enabled = false }
+strict-behavior = { enabled = false }
+strict-types = { enabled = false }
 too-many-methods = { enabled = false }
 too-many-properties = { enabled = false }
 
@@ -39,5 +45,8 @@ ignore = [
     "mixed-property-access",
     "mixed-property-type-coercion",
     "non-documented-property",
+    "redundant-cast",
+    "redundant-comparison",
+    "redundant-condition",
     "reference-to-undefined-variable",
 ]
