@@ -38,5 +38,6 @@ ignore = [
     "mixed-operand",
     "mixed-property-access",
     "mixed-property-type-coercion",
+    "non-documented-property",
     "reference-to-undefined-variable",
 ]
